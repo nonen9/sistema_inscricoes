@@ -22,7 +22,8 @@ let userConfig = {};
 try {
     userConfig = JSON.parse(fsSync.readFileSync(USERS_FILE, 'utf8'));
     console.log('✅ Configuração de usuários carregada com sucesso');
-    console.log('👥 Usuários cadastrados:', userConfig.length || 0);
+    console.log('👥 Usuários cadastrados:', Object.keys(userConfig).length);
+    console.log('📋 Usuários:', Object.keys(userConfig).join(', '));
 } catch (error) {
     console.error('❌ Erro ao carregar configuração de usuários:', error.message);
     console.log('💡 Execute: npm run init para criar o arquivo de usuários');
@@ -388,6 +389,49 @@ async function sendWebhookNotification(tournament, registrations) {
 
 // Routes
 
+// User management functions
+async function reloadUserConfig() {
+    try {
+        userConfig = JSON.parse(fsSync.readFileSync(USERS_FILE, 'utf8'));
+        console.log('✅ Configuração de usuários recarregada');
+    } catch (error) {
+        console.error('❌ Erro ao recarregar configuração de usuários:', error.message);
+    }
+}
+
+async function saveUserConfig(users) {
+    try {
+        console.log('💾 Salvando configuração de usuários...');
+        console.log('📋 Usuários a serem salvos:', Object.keys(users));
+        
+        await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2));
+        userConfig = users; // Update in-memory config
+        
+        console.log('✅ Configuração de usuários salva com sucesso');
+        console.log('📂 Arquivo salvo em:', USERS_FILE);
+        
+        // Verify file was written
+        const fileContent = await fs.readFile(USERS_FILE, 'utf8');
+        const parsedContent = JSON.parse(fileContent);
+        console.log('✅ Verificação: arquivo contém', Object.keys(parsedContent).length, 'usuários');
+        
+    } catch (error) {
+        console.error('❌ Erro ao salvar configuração de usuários:', error);
+        throw error;
+    }
+}
+
+// Admin-only middleware
+function requireAdmin(req, res, next) {
+    console.log('🔍 requireAdmin middleware - usuário:', req.user.username, 'role:', req.user.role);
+    if (req.user.role !== 'admin') {
+        console.log('❌ Acesso negado - usuário não é admin');
+        return res.status(403).json({ error: 'Acesso negado. Requer privilégios de administrador.' });
+    }
+    console.log('✅ Usuário é admin, prosseguindo...');
+    next();
+}
+
 // Authentication routes
 app.post('/api/auth/login', async (req, res) => {
     try {
@@ -474,6 +518,195 @@ app.get('/api/auth/profile', requireAuth, (req, res) => {
     }
 });
 
+// Admin User Management Routes
+
+// Get all users (admin only)
+app.get('/api/admin/users', requireAuth, requireAdmin, (req, res) => {
+    try {
+        const users = Object.values(userConfig).map(user => ({
+            username: user.username,
+            role: user.role,
+            active: user.active,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt
+        }));
+        
+        res.json(users);
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+// Create new user (admin only)
+app.post('/api/admin/users', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        console.log('🔍 POST /api/admin/users - Recebido por:', req.user.username);
+        console.log('📋 Body recebido:', JSON.stringify(req.body, null, 2));
+        
+        const { username, password, role = 'admin' } = req.body;
+        
+        // Validation
+        if (!username || !password) {
+            console.log('❌ Validação falhou: campos obrigatórios');
+            return res.status(400).json({ error: 'Nome de usuário e senha são obrigatórios' });
+        }
+        
+        if (username.length < 3) {
+            console.log('❌ Validação falhou: username muito curto');
+            return res.status(400).json({ error: 'Nome de usuário deve ter pelo menos 3 caracteres' });
+        }
+        
+        if (password.length < 6) {
+            console.log('❌ Validação falhou: senha muito curta');
+            return res.status(400).json({ error: 'Senha deve ter pelo menos 6 caracteres' });
+        }
+        
+        if (!['admin', 'organizer'].includes(role)) {
+            console.log('❌ Validação falhou: role inválida:', role);
+            return res.status(400).json({ error: 'Função inválida. Use "admin" ou "organizer"' });
+        }
+        
+        // Check if user already exists
+        if (userConfig[username]) {
+            console.log('❌ Usuário já existe:', username);
+            return res.status(409).json({ error: 'Usuário já existe' });
+        }
+        
+        console.log('✅ Validações passaram, criando usuário...');
+        
+        // Hash password
+        const passwordHash = await bcrypt.hash(password, 10);
+        console.log('✅ Senha hasheada');
+        
+        // Create new user
+        const newUser = {
+            username,
+            passwordHash,
+            role,
+            createdAt: new Date().toISOString(),
+            active: true
+        };
+        
+        console.log('✅ Objeto do usuário criado');
+        
+        // Update user config
+        const updatedConfig = { ...userConfig };
+        updatedConfig[username] = newUser;
+        
+        console.log('✅ Config atualizada, salvando...');
+        
+        await saveUserConfig(updatedConfig);
+        
+        console.log(`✅ Usuário criado: ${username} por ${req.user.username}`);
+        
+        res.status(201).json({
+            message: 'Usuário criado com sucesso',
+            user: {
+                username: newUser.username,
+                role: newUser.role,
+                active: newUser.active,
+                createdAt: newUser.createdAt
+            }
+        });
+    } catch (error) {
+        console.error('❌ Error creating user:', error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+// Update user password (admin only)
+app.put('/api/admin/users/:username/password', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const { username } = req.params;
+        const { newPassword } = req.body;
+        
+        // Validation
+        if (!newPassword) {
+            return res.status(400).json({ error: 'Nova senha é obrigatória' });
+        }
+        
+        if (newPassword.length < 6) {
+            return res.status(400).json({ error: 'Senha deve ter pelo menos 6 caracteres' });
+        }
+        
+        // Check if user exists
+        if (!userConfig[username]) {
+            return res.status(404).json({ error: 'Usuário não encontrado' });
+        }
+        
+        // Hash new password
+        const passwordHash = await bcrypt.hash(newPassword, 10);
+        
+        // Update user config
+        const updatedConfig = { ...userConfig };
+        updatedConfig[username] = {
+            ...updatedConfig[username],
+            passwordHash,
+            updatedAt: new Date().toISOString()
+        };
+        
+        await saveUserConfig(updatedConfig);
+        
+        console.log(`✅ Senha alterada para usuário: ${username} por ${req.user.username}`);
+        
+        res.json({ message: 'Senha alterada com sucesso' });
+    } catch (error) {
+        console.error('Error updating password:', error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+// Update user status (admin only)
+app.put('/api/admin/users/:username/status', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const { username } = req.params;
+        const { active } = req.body;
+        
+        // Validation
+        if (typeof active !== 'boolean') {
+            return res.status(400).json({ error: 'Status deve ser true ou false' });
+        }
+        
+        // Check if user exists
+        if (!userConfig[username]) {
+            return res.status(404).json({ error: 'Usuário não encontrado' });
+        }
+        
+        // Prevent admin from deactivating themselves
+        if (username === req.user.username && !active) {
+            return res.status(400).json({ error: 'Você não pode desativar sua própria conta' });
+        }
+        
+        // Update user config
+        const updatedConfig = { ...userConfig };
+        updatedConfig[username] = {
+            ...updatedConfig[username],
+            active,
+            updatedAt: new Date().toISOString()
+        };
+        
+        if (!active) {
+            updatedConfig[username].deactivatedAt = new Date().toISOString();
+        } else {
+            delete updatedConfig[username].deactivatedAt;
+            updatedConfig[username].reactivatedAt = new Date().toISOString();
+        }
+        
+        await saveUserConfig(updatedConfig);
+        
+        console.log(`✅ Status do usuário ${username} alterado para ${active ? 'ativo' : 'inativo'} por ${req.user.username}`);
+        
+        res.json({ 
+            message: `Usuário ${active ? 'ativado' : 'desativado'} com sucesso`,
+            active 
+        });
+    } catch (error) {
+        console.error('Error updating user status:', error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
 // Root route - redirect to login or admin
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'login.html'));
@@ -487,6 +720,11 @@ app.get('/admin', (req, res) => {
 // Admin players page - protected
 app.get('/admin/players.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin', 'players.html'));
+});
+
+// Admin users page - protected (admin only)
+app.get('/admin/users.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin', 'users.html'));
 });
 
 // Login page
@@ -719,11 +957,25 @@ app.get('/registrations/:tournamentId', requireAuth, (req, res) => {
 
 // API Routes
 
-// Get all tournaments
-app.get('/api/tournaments', async (req, res) => {
+// Get all tournaments (filtered by user)
+app.get('/api/tournaments', requireAuth, async (req, res) => {
     try {
+        console.log('🔍 Listando campeonatos para usuário:', req.user.username, 'Role:', req.user.role);
+        
         const tournaments = await readTournaments();
-        res.json(tournaments);
+        
+        let filteredTournaments;
+        if (req.user.role === 'admin') {
+            // Admin vê todos os campeonatos
+            filteredTournaments = tournaments;
+            console.log('✅ Admin: mostrando todos os', tournaments.length, 'campeonatos');
+        } else {
+            // Organizadores veem apenas seus próprios campeonatos
+            filteredTournaments = tournaments.filter(t => t.createdBy === req.user.username);
+            console.log('👤 Organizador:', req.user.username, '- mostrando', filteredTournaments.length, 'de', tournaments.length, 'campeonatos');
+        }
+        
+        res.json(filteredTournaments);
     } catch (error) {
         console.error('Error fetching tournaments:', error);
         res.status(500).json({ error: 'Erro interno do servidor' });
@@ -817,6 +1069,7 @@ app.post('/api/tournaments', requireAuth, async (req, res) => {
             baseCategoryPrice: parseFloat(baseCategoryPrice) || 0,
             additionalCategoryPrice: parseFloat(additionalCategoryPrice) || 0,
             webhook: webhook ? webhook.trim() : null,
+            createdBy: req.user.username, // Adiciona o criador do campeonato
             createdAt: new Date().toISOString()
         };
 
@@ -1112,13 +1365,29 @@ app.post('/api/tournaments/:id/register', async (req, res) => {
     }
 });
 
-// Get tournament registrations
+// Get tournament registrations (filtered by user)
 app.get('/api/tournaments/:id/registrations', requireAuth, async (req, res) => {
     try {
         const tournamentId = req.params.id;
+        
+        // Verificar se o usuário tem permissão para ver este campeonato
+        const tournaments = await readTournaments();
+        const tournament = tournaments.find(t => t.id === tournamentId);
+        
+        if (!tournament) {
+            return res.status(404).json({ error: 'Campeonato não encontrado' });
+        }
+        
+        // Admin pode ver qualquer campeonato, organizadores apenas os seus
+        if (req.user.role !== 'admin' && tournament.createdBy !== req.user.username) {
+            console.log('❌ Acesso negado: usuário', req.user.username, 'tentou acessar campeonato de', tournament.createdBy);
+            return res.status(403).json({ error: 'Acesso negado: você só pode ver registrações dos seus próprios campeonatos' });
+        }
+        
         const registrations = await readRegistrations();
         const tournamentRegistrations = registrations.filter(r => r.tournamentId === tournamentId);
         
+        console.log('✅ Usuário', req.user.username, 'acessou', tournamentRegistrations.length, 'registrações do campeonato', tournament.name);
         res.json(tournamentRegistrations);
     } catch (error) {
         console.error('Error fetching registrations:', error);
@@ -1126,18 +1395,33 @@ app.get('/api/tournaments/:id/registrations', requireAuth, async (req, res) => {
     }
 });
 
-// Get all registrations (for admin dashboard)
+// Get all registrations (filtered by user permissions)
 app.get('/api/registrations', requireAuth, async (req, res) => {
     try {
         const registrations = await readRegistrations();
-        res.json(registrations);
+        
+        if (req.user.role === 'admin') {
+            // Admin vê todas as registrações
+            console.log('✅ Admin acessou todas as', registrations.length, 'registrações');
+            res.json(registrations);
+        } else {
+            // Organizadores veem apenas registrações dos seus campeonatos
+            const tournaments = await readTournaments();
+            const userTournaments = tournaments.filter(t => t.createdBy === req.user.username);
+            const userTournamentIds = userTournaments.map(t => t.id);
+            
+            const filteredRegistrations = registrations.filter(r => userTournamentIds.includes(r.tournamentId));
+            
+            console.log('👤 Organizador', req.user.username, 'acessou', filteredRegistrations.length, 'de', registrations.length, 'registrações');
+            res.json(filteredRegistrations);
+        }
     } catch (error) {
         console.error('Error fetching all registrations:', error);
         res.status(500).json({ error: 'Erro interno do servidor' });
     }
 });
 
-// Delete registration
+// Delete registration (with permission check)
 app.delete('/api/registrations/:id', requireAuth, async (req, res) => {
     try {
         const registrationId = req.params.id;
@@ -1148,6 +1432,19 @@ app.delete('/api/registrations/:id', requireAuth, async (req, res) => {
             return res.status(404).json({ error: 'Inscrição não encontrada' });
         }
         
+        const registration = registrations[registrationIndex];
+        
+        // Verificar permissão do usuário
+        if (req.user.role !== 'admin') {
+            const tournaments = await readTournaments();
+            const tournament = tournaments.find(t => t.id === registration.tournamentId);
+            
+            if (!tournament || tournament.createdBy !== req.user.username) {
+                console.log('❌ Acesso negado: usuário', req.user.username, 'tentou deletar inscrição de campeonato não próprio');
+                return res.status(403).json({ error: 'Acesso negado: você só pode deletar inscrições dos seus próprios campeonatos' });
+            }
+        }
+        
         const deletedRegistration = registrations[registrationIndex];
         registrations.splice(registrationIndex, 1);
         await writeRegistrations(registrations);
@@ -1155,6 +1452,7 @@ app.delete('/api/registrations/:id', requireAuth, async (req, res) => {
         // Remove from players database
         await removeFromPlayerDatabase(deletedRegistration);
 
+        console.log('✅ Usuário', req.user.username, 'deletou inscrição', registrationId);
         res.json({ message: 'Inscrição excluída com sucesso' });
     } catch (error) {
         console.error('Error deleting registration:', error);
@@ -1173,6 +1471,12 @@ app.get('/api/tournaments/:tournamentId/unique-players', requireAuth, async (req
         const tournament = tournaments.find(t => t.id === tournamentId);
         if (!tournament) {
             return res.status(404).json({ error: 'Torneio não encontrado' });
+        }
+        
+        // Verificar permissão do usuário
+        if (req.user.role !== 'admin' && tournament.createdBy !== req.user.username) {
+            console.log('❌ Acesso negado: usuário', req.user.username, 'tentou acessar jogadores de campeonato de', tournament.createdBy);
+            return res.status(403).json({ error: 'Acesso negado: você só pode ver jogadores dos seus próprios campeonatos' });
         }
 
         // Get all registrations for this tournament
@@ -1645,8 +1949,35 @@ app.use((req, res) => {
     res.status(404).json({ error: 'Rota não encontrada' });
 });
 
+// Migration function to add createdBy field to existing tournaments
+async function migrateTournaments() {
+    try {
+        const tournaments = await readTournaments();
+        let updated = false;
+        
+        tournaments.forEach(tournament => {
+            if (!tournament.createdBy) {
+                // Assign existing tournaments to admin user for backward compatibility
+                tournament.createdBy = 'admin';
+                updated = true;
+                console.log('🔄 Migração: campeonato', tournament.name, 'atribuído ao admin');
+            }
+        });
+        
+        if (updated) {
+            await writeTournaments(tournaments);
+            console.log('✅ Migração de campeonatos concluída');
+        }
+    } catch (error) {
+        console.error('❌ Erro na migração de campeonatos:', error);
+    }
+}
+
 async function startServer() {
     await ensureDataDirectory();
+    
+    // Execute migration for existing tournaments
+    await migrateTournaments();
     
     app.listen(PORT, '0.0.0.0', () => {
         console.log(`🚀 Servidor rodando na porta ${PORT}`);

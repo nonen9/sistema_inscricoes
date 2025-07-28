@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Criação de Usuário</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 600px; 
+            margin: 50px auto; 
+            padding: 20px; 
+        }
+        .form-group { 
+            margin-bottom: 15px; 
+        }
+        label { 
+            display: block; 
+            margin-bottom: 5px; 
+        }
+        input, select { 
+            width: 100%; 
+            padding: 8px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+        }
+        button { 
+            background: #007cba; 
+            color: white; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+        }
+        .error { 
+            background: #fee; 
+            border: 1px solid #fcc; 
+            padding: 10px; 
+            border-radius: 4px; 
+            color: #c00; 
+            margin-top: 10px; 
+        }
+        .success { 
+            background: #efe; 
+            border: 1px solid #cfc; 
+            padding: 10px; 
+            border-radius: 4px; 
+            color: #060; 
+            margin-top: 10px; 
+        }
+        .log {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Teste - Criação de Usuário</h1>
+    
+    <form id="testForm">
+        <div class="form-group">
+            <label for="username">Nome de Usuário:</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Senha:</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="role">Função:</label>
+            <select id="role" name="role">
+                <option value="admin">Administrador</option>
+                <option value="organizer">Organizador</option>
+            </select>
+        </div>
+        
+        <button type="submit" id="submitBtn">Criar Usuário</button>
+    </form>
+    
+    <div id="result"></div>
+    <div class="log" id="log"></div>
+
+    <script>
+        let logContent = '';
+        
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            logContent += `[${timestamp}] ${message}\n`;
+            document.getElementById('log').textContent = logContent;
+            console.log(message);
+        }
+        
+        function showResult(message, isError = false) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = isError ? 'error' : 'success';
+            resultDiv.textContent = message;
+        }
+        
+        function getAuthToken() {
+            return localStorage.getItem('authToken');
+        }
+        
+        function getAuthHeaders() {
+            const token = getAuthToken();
+            return token ? { 'Authorization': `Bearer ${token}` } : {};
+        }
+        
+        async function testUserCreation(username, password, role) {
+            log('🔍 Iniciando teste de criação de usuário');
+            log(`📋 Dados: username=${username}, password=${password}, role=${role}`);
+            
+            // Check auth token
+            const token = getAuthToken();
+            log(`🔑 Token: ${token ? 'Presente' : 'Ausente'}`);
+            
+            if (!token) {
+                log('❌ Token não encontrado no localStorage');
+                showResult('Erro: Token de autenticação não encontrado. Faça login primeiro.', true);
+                return;
+            }
+            
+            try {
+                log('🌐 Fazendo requisição POST para /api/admin/users');
+                
+                const requestData = {
+                    username: username,
+                    password: password,
+                    role: role
+                };
+                
+                log(`📤 Enviando dados: ${JSON.stringify(requestData)}`);
+                
+                const response = await fetch('/api/admin/users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...getAuthHeaders()
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                log(`📡 Status da resposta: ${response.status}`);
+                log(`📋 Headers da resposta: ${JSON.stringify([...response.headers.entries()])}`);
+                
+                const result = await response.json();
+                log(`📥 Resposta recebida: ${JSON.stringify(result, null, 2)}`);
+                
+                if (response.ok) {
+                    log('✅ Usuário criado com sucesso!');
+                    showResult('Usuário criado com sucesso!', false);
+                } else {
+                    log(`❌ Erro: ${result.error}`);
+                    showResult(`Erro: ${result.error}`, true);
+                }
+            } catch (error) {
+                log(`❌ Erro de conexão: ${error.message}`);
+                log(`❌ Stack trace: ${error.stack}`);
+                showResult(`Erro de conexão: ${error.message}`, true);
+            }
+        }
+        
+        document.getElementById('testForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const role = document.getElementById('role').value;
+            
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Criando...';
+            
+            await testUserCreation(username, password, role);
+            
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Criar Usuário';
+        });
+        
+        // Log initial info
+        log('🚀 Página de teste carregada');
+        log(`🌍 URL atual: ${window.location.href}`);
+        log(`🔑 Token presente: ${getAuthToken() ? 'Sim' : 'Não'}`);
+        
+        // Check localStorage content
+        log('📦 Conteúdo do localStorage:');
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            const value = localStorage.getItem(key);
+            log(`  ${key}: ${value}`);
+        }
+    </script>
+</body>
+</html>

@@ -55,6 +55,12 @@ async function initProduction() {
             console.log('⚠️  IMPORTANTE: Usando senha padrão "admin123"');
             console.log('⚠️  Altere a senha após o primeiro login!');
         }
+        
+        console.log('\n💡 DICAS:');
+        console.log('   • Use a seção "Usuários" no painel admin para criar novos usuários');
+        console.log('   • Novos usuários podem ter função "admin" ou "organizer"');
+        console.log('   • Administradores têm acesso completo ao sistema');
+        console.log('   • Organizadores podem criar e gerenciar campeonatos');
     }
     
     console.log('✅ Inicialização concluída!');

@@ -40,7 +40,7 @@
         </div>
 
         <!-- Quick Actions Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12" id="quickActionsGrid">
             <!-- Criar Campeonato -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 cursor-pointer group" onclick="navigateToCreateTournament()">
                 <div class="flex items-center justify-between mb-4">
@@ -87,6 +87,22 @@
                 </div>
                 <h3 class="text-lg font-semibold text-gray-900 mb-2">Jogadores Únicos</h3>
                 <p class="text-sm text-gray-600">Visualize todos os jogadores registrados</p>
+            </div>
+
+            <!-- Gerenciar Usuários (só para admin) -->
+            <div id="usersCard" class="hidden bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 cursor-pointer group" onclick="navigateToUsers()">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center group-hover:bg-blue-700 transition-colors">
+                        <span class="text-white text-xl">🔐</span>
+                    </div>
+                    <span class="text-gray-400 group-hover:text-blue-600 transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </span>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Gerenciar Usuários</h3>
+                <p class="text-sm text-gray-600">Adicione e gerencie usuários do sistema</p>
             </div>
         </div>
 
@@ -139,6 +155,10 @@
             window.location.href = '/admin/players.html';
         }
 
+        function navigateToUsers() {
+            window.location.href = '/admin/users.html';
+        }
+
         // Dashboard class
         class Dashboard {
             constructor() {
@@ -149,8 +169,25 @@
             }
 
             async init() {
+                this.setupUserInterface();
                 await this.loadStats();
                 await this.loadRecentActivity();
+            }
+
+            setupUserInterface() {
+                // Show users card only for admin users
+                const user = JSON.parse(localStorage.getItem('user') || '{}');
+                if (user.role === 'admin') {
+                    document.getElementById('usersCard').classList.remove('hidden');
+                    
+                    // Adjust grid layout for 4 items
+                    const grid = document.getElementById('quickActionsGrid');
+                    grid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12';
+                } else {
+                    // Keep original 3-column layout for non-admin users
+                    const grid = document.getElementById('quickActionsGrid');
+                    grid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12';
+                }
             }
 
             async loadStats() {

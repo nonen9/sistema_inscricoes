@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Usuários - Teste Simples</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-2xl font-bold mb-6">Gerenciar Usuários - Teste Simples</h1>
+        
+        <!-- Test Info -->
+        <div class="bg-blue-50 border border-blue-200 p-4 rounded mb-6">
+            <h3 class="font-semibold">Status do Sistema:</h3>
+            <div id="systemStatus"></div>
+        </div>
+        
+        <!-- Create User Form -->
+        <div class="bg-white p-6 rounded-lg shadow mb-6">
+            <h2 class="text-lg font-semibold mb-4">Criar Novo Usuário</h2>
+            
+            <form id="createUserForm">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Nome de Usuário</label>
+                        <input type="text" name="username" id="username" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Senha</label>
+                        <input type="password" name="password" id="password" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded">
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Função</label>
+                    <select name="role" id="role" class="w-full px-3 py-2 border border-gray-300 rounded">
+                        <option value="admin">Administrador</option>
+                        <option value="organizer">Organizador</option>
+                    </select>
+                </div>
+                
+                <button type="submit" id="submitBtn" 
+                        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                    Criar Usuário
+                </button>
+            </form>
+            
+            <div id="result" class="mt-4"></div>
+        </div>
+        
+        <!-- Users List -->
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-lg font-semibold mb-4">Lista de Usuários</h2>
+            <div id="usersList"></div>
+            <button onclick="loadUsers()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mt-4">
+                Recarregar Lista
+            </button>
+        </div>
+        
+        <!-- Debug Log -->
+        <div class="bg-gray-100 p-4 rounded mt-6">
+            <h3 class="font-semibold mb-2">Debug Log:</h3>
+            <pre id="debugLog" class="text-xs text-gray-700 whitespace-pre-wrap"></pre>
+        </div>
+    </div>
+
+    <script>
+        let debugLog = '';
+        
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            debugLog += `[${timestamp}] ${message}\n`;
+            document.getElementById('debugLog').textContent = debugLog;
+            console.log(message);
+        }
+        
+        function showResult(message, isError = false) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = `mt-4 p-3 rounded ${isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`;
+            resultDiv.textContent = message;
+        }
+        
+        function getAuthToken() {
+            return localStorage.getItem('authToken');
+        }
+        
+        function getAuthHeaders() {
+            const token = getAuthToken();
+            return token ? { 'Authorization': `Bearer ${token}` } : {};
+        }
+        
+        async function loadUsers() {
+            log('🔍 Carregando lista de usuários...');
+            try {
+                const response = await fetch('/api/admin/users', {
+                    headers: getAuthHeaders()
+                });
+                
+                log(`📡 Status da resposta: ${response.status}`);
+                
+                if (response.ok) {
+                    const users = await response.json();
+                    log(`✅ ${users.length} usuários carregados`);
+                    
+                    const usersList = document.getElementById('usersList');
+                    usersList.innerHTML = users.map(user => `
+                        <div class="border-b py-2">
+                            <strong>${user.username}</strong> - ${user.role} - ${user.active ? 'Ativo' : 'Inativo'}
+                        </div>
+                    `).join('');
+                } else {
+                    const error = await response.json();
+                    log(`❌ Erro ao carregar usuários: ${error.error}`);
+                }
+            } catch (error) {
+                log(`❌ Erro de conexão: ${error.message}`);
+            }
+        }
+        
+        async function createUser(userData) {
+            log('🔍 Criando usuário...');
+            log(`📋 Dados: ${JSON.stringify(userData)}`);
+            
+            try {
+                const response = await fetch('/api/admin/users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...getAuthHeaders()
+                    },
+                    body: JSON.stringify(userData)
+                });
+                
+                log(`📡 Status da resposta: ${response.status}`);
+                const result = await response.json();
+                log(`📥 Resposta: ${JSON.stringify(result)}`);
+                
+                if (response.ok) {
+                    log('✅ Usuário criado com sucesso!');
+                    showResult('Usuário criado com sucesso!', false);
+                    document.getElementById('createUserForm').reset();
+                    await loadUsers();
+                } else {
+                    log(`❌ Erro: ${result.error}`);
+                    showResult(`Erro: ${result.error}`, true);
+                }
+            } catch (error) {
+                log(`❌ Erro de conexão: ${error.message}`);
+                showResult(`Erro de conexão: ${error.message}`, true);
+            }
+        }
+        
+        // Form submission
+        document.getElementById('createUserForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            log('🔍 Form submitted');
+            
+            const formData = new FormData(e.target);
+            const userData = Object.fromEntries(formData);
+            
+            log(`📋 Form data: ${JSON.stringify(userData)}`);
+            
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Criando...';
+            
+            await createUser(userData);
+            
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Criar Usuário';
+        });
+        
+        // Initialize
+        window.addEventListener('DOMContentLoaded', () => {
+            log('🚀 Página carregada');
+            
+            // Check system status
+            const token = getAuthToken();
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            
+            document.getElementById('systemStatus').innerHTML = `
+                <div>Token: ${token ? 'Presente' : 'Ausente'}</div>
+                <div>Usuário: ${user.username || 'Não logado'}</div>
+                <div>Função: ${user.role || 'N/A'}</div>
+            `;
+            
+            if (token) {
+                log('✅ Token encontrado, carregando usuários...');
+                loadUsers();
+            } else {
+                log('❌ Token não encontrado');
+                showResult('Token de autenticação não encontrado. Faça login primeiro.', true);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Form</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="p-8">
+    <h1 class="text-2xl font-bold mb-4">Debug Form - Teste de Submit</h1>
+    
+    <!-- Test Form -->
+    <form id="testForm" class="bg-white p-6 border rounded">
+        <div class="mb-4">
+            <label class="block text-sm font-medium mb-2">Username</label>
+            <input type="text" name="username" required class="border p-2 w-full">
+        </div>
+        <div class="mb-4">
+            <label class="block text-sm font-medium mb-2">Password</label>
+            <input type="password" name="password" required class="border p-2 w-full">
+        </div>
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Submit</button>
+    </form>
+
+    <div class="mt-6">
+        <h2 class="text-lg font-bold mb-2">Debug Log:</h2>
+        <pre id="log" class="bg-gray-100 p-4 text-xs"></pre>
+    </div>
+
+    <script src="admin-header.js"></script>
+    <script>
+        let logContent = '';
+        
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            logContent += `[${timestamp}] ${message}\n`;
+            document.getElementById('log').textContent = logContent;
+            console.log(message);
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            log('DOM Content Loaded');
+            
+            // Initialize AdminHeader
+            try {
+                AdminHeader.init('users');
+                log('AdminHeader initialized');
+            } catch (error) {
+                log('AdminHeader error: ' + error.message);
+            }
+            
+            const form = document.getElementById('testForm');
+            if (form) {
+                log('Form found');
+                
+                form.addEventListener('submit', async (e) => {
+                    log('SUBMIT EVENT TRIGGERED!');
+                    e.preventDefault();
+                    
+                    const formData = new FormData(e.target);
+                    const data = Object.fromEntries(formData);
+                    log('Form data: ' + JSON.stringify(data));
+                    
+                    try {
+                        log('Making API call...');
+                        const response = await fetch('/api/admin/users', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                ...AdminHeader.getAuthHeaders()
+                            },
+                            body: JSON.stringify({
+                                username: data.username,
+                                password: data.password,
+                                role: 'organizer'
+                            })
+                        });
+                        
+                        log('Response status: ' + response.status);
+                        const result = await response.json();
+                        log('Response: ' + JSON.stringify(result));
+                        
+                        if (response.ok) {
+                            log('SUCCESS: User created!');
+                        } else {
+                            log('ERROR: ' + result.error);
+                        }
+                    } catch (error) {
+                        log('FETCH ERROR: ' + error.message);
+                    }
+                });
+                
+                log('Event listener added');
+            } else {
+                log('Form NOT found');
+            }
+        });
+    </script>
+</body>
+</html>

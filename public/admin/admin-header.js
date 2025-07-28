@@ -18,7 +18,8 @@ class AdminHeader {
             'index': 'dashboard',
             'create-tournament': 'create',
             'tournaments': 'tournaments',
-            'players': 'players'
+            'players': 'players',
+            'users': 'users'
         };
         
         return pageMap[page] || 'dashboard';
@@ -38,7 +39,10 @@ class AdminHeader {
     }
 
     getNavigationItems() {
-        return [
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const isAdmin = user.role === 'admin';
+        
+        const items = [
             {
                 id: 'dashboard',
                 href: 'index.html',
@@ -68,6 +72,19 @@ class AdminHeader {
                 description: 'Controle de participantes'
             }
         ];
+        
+        // Add users management only for admins
+        if (isAdmin) {
+            items.push({
+                id: 'users',
+                href: 'users.html',
+                icon: '🔐',
+                label: 'Usuários',
+                description: 'Gerenciar usuários do sistema'
+            });
+        }
+        
+        return items;
     }
 
     renderNavigation() {
@@ -109,6 +126,11 @@ class AdminHeader {
             'players': {
                 title: 'Jogadores Únicos',
                 subtitle: 'Visualize jogadores consolidados com totais por campeonato',
+                showBackButton: true
+            },
+            'users': {
+                title: 'Gerenciamento de Usuários',
+                subtitle: 'Adicione e gerencie usuários do sistema',
                 showBackButton: true
             }
         };
@@ -250,6 +272,7 @@ class AdminHeader {
 
     static getAuthHeaders() {
         const token = AdminHeader.getAuthToken();
+        console.log('🔍 getAuthHeaders - token:', token ? 'Presente' : 'Ausente');
         return token ? { 'Authorization': `Bearer ${token}` } : {};
     }
 
