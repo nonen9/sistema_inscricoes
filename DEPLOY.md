@@ -1,4 +1,42 @@
-# 🚀 Deploy no EasyPanel - Configurações
+# 🚀 Guia de Deploy - EasyPanel
+
+Este documento contém instruções específicas para fazer deploy do Sistema de Campeonatos no EasyPanel.
+
+## 📋 Configuração no EasyPanel
+
+### 1. Informações do Repositório GitHub
+- **Repository URL**: `https://github.com/nonen9/sistema_inscricoes`
+- **Branch**: `master`
+
+### 2. Configurações de Build
+
+#### Caminho de Build*
+```
+.
+```
+(Use apenas um ponto - isso indica que o Dockerfile está na raiz do projeto)
+
+#### Dockerfile Path
+```
+Dockerfile
+```
+
+#### Build Context
+```
+.
+```
+
+### 3. Configurações de Runtime
+
+#### Porta da Aplicação
+```
+3000
+```
+
+#### Health Check Endpoint
+```
+/api/health
+```
 
 ## 📋 Variáveis de Ambiente Necessárias
 

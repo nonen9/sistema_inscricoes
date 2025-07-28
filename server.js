@@ -40,6 +40,17 @@ const AUTH_CONFIG = {
 app.use(express.json());
 app.use(express.static('public'));
 
+// Health check endpoint (deve vir antes dos middlewares de auth)
+app.get('/api/health', (req, res) => {
+    res.status(200).json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        environment: config.environment,
+        version: require('./package.json').version
+    });
+});
+
 // Authentication middleware
 function requireAuth(req, res, next) {
     const token = req.headers.authorization?.replace('Bearer ', '');
