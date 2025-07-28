@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Sistema de Inscrições</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            500: '#0f172a',
+                            600: '#020617',
+                            700: '#020617'
+                        },
+                        accent: {
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div class="max-w-md w-full mx-4">
+        <!-- Logo/Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Sistema de Inscrições</h1>
+            <p class="text-gray-600">Acesso Administrativo</p>
+        </div>
+
+        <!-- Login Form -->
+        <div class="bg-white rounded-lg border border-gray-200 shadow-sm">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Fazer Login</h2>
+            </div>
+            <div class="p-6">
+                <form id="loginForm" class="space-y-6">
+                    <div>
+                        <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
+                            Usuário
+                        </label>
+                        <input type="text" id="username" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent" 
+                               placeholder="Digite seu usuário" required>
+                    </div>
+
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                            Senha
+                        </label>
+                        <input type="password" id="password" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent" 
+                               placeholder="Digite sua senha" required>
+                    </div>
+
+                    <!-- Alert Messages -->
+                    <div id="alertContainer"></div>
+
+                    <button type="submit" id="loginBtn"
+                            class="w-full bg-accent-600 hover:bg-accent-700 text-white font-medium py-3 px-4 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:ring-offset-2">
+                        Entrar
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Default Credentials Info -->
+        <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h3 class="text-sm font-medium text-blue-900 mb-2">Credenciais Padrão:</h3>
+            <div class="text-sm text-blue-700 space-y-1">
+                <p><strong>Usuário:</strong> admin</p>
+                <p><strong>Senha:</strong> admin123</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class LoginManager {
+            constructor() {
+                this.form = document.getElementById('loginForm');
+                this.alertContainer = document.getElementById('alertContainer');
+                this.init();
+            }
+
+            init() {
+                // Check if already logged in
+                if (this.isLoggedIn()) {
+                    window.location.href = '/admin/';
+                    return;
+                }
+
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                this.form.addEventListener('submit', this.handleLogin.bind(this));
+            }
+
+            async handleLogin(event) {
+                event.preventDefault();
+                
+                const loginBtn = document.getElementById('loginBtn');
+                const originalText = loginBtn.textContent;
+                
+                try {
+                    // Show loading state
+                    loginBtn.innerHTML = `
+                        <div class="flex items-center justify-center gap-2">
+                            <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            <span>Entrando...</span>
+                        </div>
+                    `;
+                    loginBtn.disabled = true;
+
+                    const username = document.getElementById('username').value.trim();
+                    const password = document.getElementById('password').value;
+
+                    // Basic validation
+                    if (!username || !password) {
+                        this.showAlert('error', 'Por favor, preencha todos os campos.');
+                        return;
+                    }
+
+                    // Simulate API call
+                    const response = await fetch('/api/auth/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ username, password })
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        // Store auth token
+                        localStorage.setItem('authToken', result.token);
+                        localStorage.setItem('user', JSON.stringify(result.user));
+                        
+                        this.showAlert('success', 'Login realizado com sucesso! Redirecionando...');
+                        
+                        // Redirect after success
+                        setTimeout(() => {
+                            window.location.href = '/admin/';
+                        }, 1000);
+                    } else {
+                        this.showAlert('error', result.error || 'Credenciais inválidas.');
+                    }
+
+                } catch (error) {
+                    console.error('Login error:', error);
+                    this.showAlert('error', 'Erro de conexão. Tente novamente.');
+                } finally {
+                    loginBtn.innerHTML = originalText;
+                    loginBtn.disabled = false;
+                }
+            }
+
+            isLoggedIn() {
+                const token = localStorage.getItem('authToken');
+                return token && token !== 'null' && token !== '';
+            }
+
+            showAlert(type, message) {
+                const alertClass = type === 'success' 
+                    ? 'bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-md' 
+                    : 'bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md';
+                
+                this.alertContainer.innerHTML = `
+                    <div class="${alertClass}">
+                        <div class="flex items-center gap-2">
+                            <span class="w-5 h-5 bg-current rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                ${type === 'success' ? '✓' : '!'}
+                            </span>
+                            <span class="text-sm font-medium">${message}</span>
+                        </div>
+                    </div>
+                `;
+
+                setTimeout(() => {
+                    this.alertContainer.innerHTML = '';
+                }, 5000);
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            new LoginManager();
+        });
+    </script>
+</body>
+</html>

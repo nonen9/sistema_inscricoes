@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Sistema de Inscrições</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            500: '#0f172a',
+                            600: '#020617',
+                            700: '#020617'
+                        },
+                        accent: {
+                            500: '#3b82f6',
+                            600: '#2563eb'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen bg-gray-50">
+    <!-- Admin Header -->
+    <div id="adminHeader"></div>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        <!-- Dashboard Header -->
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-bold text-gray-900 mb-4">Dashboard Administrativo</h2>
+            <p class="text-lg text-gray-600">Gerencie seus campeonatos de forma simples e eficiente</p>
+        </div>
+
+        <!-- Quick Actions Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            <!-- Criar Campeonato -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 cursor-pointer group" onclick="navigateToCreateTournament()">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-accent-600 rounded-lg flex items-center justify-center group-hover:bg-accent-700 transition-colors">
+                        <span class="text-white text-xl">+</span>
+                    </div>
+                    <span class="text-gray-400 group-hover:text-accent-600 transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </span>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Criar Campeonato</h3>
+                <p class="text-sm text-gray-600">Configure um novo campeonato com categorias personalizadas</p>
+            </div>
+
+            <!-- Ver Campeonatos -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 cursor-pointer group" onclick="navigateToViewTournaments()">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center group-hover:bg-green-700 transition-colors">
+                        <span class="text-white text-xl">📋</span>
+                    </div>
+                    <span class="text-gray-400 group-hover:text-green-600 transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </span>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Ver Campeonatos</h3>
+                <p class="text-sm text-gray-600">Gerencie e visualize todos os campeonatos criados</p>
+            </div>
+
+            <!-- Ver Jogadores -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 cursor-pointer group" onclick="navigateToPlayers()">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center group-hover:bg-purple-700 transition-colors">
+                        <span class="text-white text-xl">👥</span>
+                    </div>
+                    <span class="text-gray-400 group-hover:text-purple-600 transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </span>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Jogadores Únicos</h3>
+                <p class="text-sm text-gray-600">Visualize todos os jogadores registrados</p>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Estatísticas Rápidas</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="quickStats">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-accent-600" id="totalTournaments">-</div>
+                    <div class="text-sm text-gray-600">Campeonatos</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-green-600" id="totalRegistrations">-</div>
+                    <div class="text-sm text-gray-600">Inscrições</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-purple-600" id="totalPlayers">-</div>
+                    <div class="text-sm text-gray-600">Jogadores</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-orange-600" id="totalCategories">-</div>
+                    <div class="text-sm text-gray-600">Categorias</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Atividade Recente</h3>
+            <div id="recentActivity" class="space-y-3">
+                <div class="text-center text-gray-500 py-8">
+                    <p class="text-sm">Carregando atividades...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="admin-header.js"></script>
+    <script>
+        // Navigation functions
+        function navigateToCreateTournament() {
+            window.location.href = '/admin/create-tournament.html';
+        }
+
+        function navigateToViewTournaments() {
+            window.location.href = '/admin/tournaments.html';
+        }
+
+        function navigateToPlayers() {
+            window.location.href = '/admin/players.html';
+        }
+
+        // Dashboard class
+        class Dashboard {
+            constructor() {
+                // Initialize the admin header
+                AdminHeader.init('dashboard');
+
+                this.init();
+            }
+
+            async init() {
+                await this.loadStats();
+                await this.loadRecentActivity();
+            }
+
+            async loadStats() {
+                try {
+                    const [tournamentsResponse, registrationsResponse, playersResponse] = await Promise.all([
+                        fetch('/api/tournaments', { headers: AdminHeader.getAuthHeaders() }),
+                        fetch('/api/registrations', { headers: AdminHeader.getAuthHeaders() }),
+                        fetch('/api/players', { headers: AdminHeader.getAuthHeaders() })
+                    ]);
+
+                    if (tournamentsResponse.status === 401) {
+                        window.location.href = '/login.html';
+                        return;
+                    }
+
+                    const tournaments = await tournamentsResponse.json();
+                    const registrations = registrationsResponse.ok ? await registrationsResponse.json() : [];
+                    const players = playersResponse.ok ? await playersResponse.json() : [];
+
+                    // Calculate stats
+                    const totalCategories = tournaments.reduce((acc, tournament) => {
+                        return acc + (tournament.categories ? tournament.categories.length : 0);
+                    }, 0);
+
+                    // Update UI
+                    document.getElementById('totalTournaments').textContent = tournaments.length;
+                    document.getElementById('totalRegistrations').textContent = registrations.length;
+                    document.getElementById('totalPlayers').textContent = players.length;
+                    document.getElementById('totalCategories').textContent = totalCategories;
+
+                } catch (error) {
+                    console.error('Error loading stats:', error);
+                    
+                    // Show placeholder values
+                    document.getElementById('totalTournaments').textContent = '0';
+                    document.getElementById('totalRegistrations').textContent = '0';
+                    document.getElementById('totalPlayers').textContent = '0';
+                    document.getElementById('totalCategories').textContent = '0';
+                }
+            }
+
+            async loadRecentActivity() {
+                try {
+                    const response = await fetch('/api/tournaments', { headers: AdminHeader.getAuthHeaders() });
+                    
+                    if (response.status === 401) {
+                        window.location.href = '/login.html';
+                        return;
+                    }
+
+                    const tournaments = await response.json();
+                    const activityContainer = document.getElementById('recentActivity');
+
+                    if (tournaments.length === 0) {
+                        activityContainer.innerHTML = `
+                            <div class="text-center text-gray-500 py-8">
+                                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <span class="text-2xl">📋</span>
+                                </div>
+                                <p class="text-sm font-medium mb-2">Nenhum campeonato criado ainda</p>
+                                <p class="text-xs">Crie seu primeiro campeonato para começar!</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    // Sort tournaments by creation date (most recent first)
+                    tournaments.sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+                    
+                    // Show last 5 activities
+                    const recentTournaments = tournaments.slice(0, 5);
+                    
+                    activityContainer.innerHTML = recentTournaments.map(tournament => `
+                        <div class="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                            <div class="w-10 h-10 bg-accent-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <span class="text-white text-sm font-bold">🏆</span>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900 truncate">
+                                    ${tournament.name}
+                                </p>
+                                <p class="text-xs text-gray-500">
+                                    ${new Date(tournament.startDate).toLocaleDateString('pt-BR')} • ${tournament.categories ? tournament.categories.length : 0} categoria${tournament.categories && tournament.categories.length !== 1 ? 's' : ''}
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button onclick="window.open('/register/${tournament.id}', '_blank')" 
+                                        class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-2 py-1 rounded transition-colors">
+                                    Ver
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+
+                } catch (error) {
+                    console.error('Error loading recent activity:', error);
+                    document.getElementById('recentActivity').innerHTML = `
+                        <div class="text-center text-gray-500 py-8">
+                            <p class="text-sm">Erro ao carregar atividades recentes</p>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        // Initialize the dashboard
+        document.addEventListener('DOMContentLoaded', () => {
+            new Dashboard();
+        });
+    </script>
+
+    <style>
+        /* Design System Esportivo Minimalista */
+        
+        /* Animações */
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .animate-fade-in {
+            animation: fade-in 0.3s ease-out;
+        }
+        
+        /* Category Cards */
+        .category-card {
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .category-card:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transform: translateY(-1px);
+        }
+        
+        /* Form Focus States */
+        input:focus, textarea:focus, select:focus {
+            font-size: 16px;
+            outline: none;
+            transform: translateY(-1px);
+        }
+        
+        /* Error States */
+        .form-error {
+            border-color: #EF4444 !important;
+            background-color: #FEF2F2 !important;
+            animation: shake 0.3s ease-in-out;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        /* Touch-friendly interactions */
+        .category-card {
+            -webkit-tap-highlight-color: rgba(59, 130, 246, 0.1);
+            user-select: none;
+        }
+        
+        .category-card:active {
+            transform: scale(0.98);
+        }
+        
+        /* Loading button */
+        .btn-loading {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid transparent;
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* Group hover effects */
+        .group:hover .group-hover\:scale-110 {
+            transform: scale(1.1);
+        }
+        
+        .group:hover .group-hover\:opacity-100 {
+            opacity: 1;
+        }
+        
+        /* Custom scrollbar */
+        @media (min-width: 768px) {
+            ::-webkit-scrollbar {
+                width: 8px;
+            }
+            
+            ::-webkit-scrollbar-track {
+                background: #F1F5F9;
+                border-radius: 4px;
+            }
+            
+            ::-webkit-scrollbar-thumb {
+                background: #CBD5E1;
+                border-radius: 4px;
+                transition: background 0.2s;
+            }
+            
+            ::-webkit-scrollbar-thumb:hover {
+                background: #94A3B8;
+            }
+        }
+        
+        /* Micro-interactions */
+        button {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        button:active {
+            transform: scale(0.98);
+        }
+        
+        /* Focus ring */
+        input:focus-visible,
+        textarea:focus-visible,
+        button:focus-visible {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 640px) {
+            .category-card {
+                padding: 1rem;
+            }
+            
+            input, textarea {
+                padding: 1rem;
+            }
+            
+            button {
+                min-height: 48px;
+            }
+        }
+    </style>
+</body>
+</html>

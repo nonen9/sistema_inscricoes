@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar Campeonato - Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        accent: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a'
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-in-out',
+                        'slide-in': 'slideIn 0.3s ease-in-out'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .form-error {
+            @apply border-red-300 bg-red-50;
+            animation: shake 0.3s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        @media (max-width: 640px) {
+            .mobile-input {
+                font-size: 16px; /* Prevent zoom on iOS */
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Admin Header -->
+    <div id="adminHeader"></div>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Alert Container -->
+        <div id="alertContainer" class="mb-6"></div>
+
+        <!-- Create Tournament Form -->
+        <div class="bg-white rounded-lg shadow border border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Novo Campeonato</h2>
+                <p class="text-sm text-gray-600 mt-1">Preencha as informações do campeonato e configure as categorias</p>
+            </div>
+
+            <form id="tournamentForm" class="p-6">
+                <!-- Basic Information -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="md:col-span-2">
+                        <label for="tournamentName" class="block text-sm font-medium text-gray-700 mb-2">
+                            Nome do Campeonato *
+                        </label>
+                        <input type="text" 
+                               id="tournamentName" 
+                               name="tournamentName" 
+                               class="mobile-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent" 
+                               placeholder="Ex: Campeonato Regional de Tênis 2024"
+                               required>
+                    </div>
+
+                    <div>
+                        <label for="startDate" class="block text-sm font-medium text-gray-700 mb-2">
+                            Data de Início *
+                        </label>
+                        <input type="date" 
+                               id="startDate" 
+                               name="startDate" 
+                               class="mobile-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent" 
+                               required>
+                    </div>
+
+                    <div>
+                        <label for="endDate" class="block text-sm font-medium text-gray-700 mb-2">
+                            Data de Término *
+                        </label>
+                        <input type="date" 
+                               id="endDate" 
+                               name="endDate" 
+                               class="mobile-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent" 
+                               required>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label for="location" class="block text-sm font-medium text-gray-700 mb-2">
+                            Local do Evento *
+                        </label>
+                        <input type="text" 
+                               id="location" 
+                               name="location" 
+                               class="mobile-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent" 
+                               placeholder="Ex: Centro Esportivo Municipal - Rua das Flores, 123"
+                               required>
+                    </div>
+
+                    <div>
+                        <label for="maxRegistrations" class="block text-sm font-medium text-gray-700 mb-2">
+                            Limite de Inscrições
+                        </label>
+                        <input type="number" 
+                               id="maxRegistrations" 
+                               name="maxRegistrations" 
+                               class="mobile-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent" 
+                               placeholder="Deixe vazio para ilimitado"
+                               min="1">
+                    </div>
+
+                    <div>
+                        <label for="webhook" class="block text-sm font-medium text-gray-700 mb-2">
+                            Integração WhatsApp (Plano Personalizado)
+                        </label>
+                        <input type="url" 
+                               id="webhook" 
+                               name="webhook" 
+                               class="mobile-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent" 
+                               placeholder="https://exemplo.com/webhook">
+                    </div>
+                </div>
+
+                <!-- Pricing Section -->
+                <div class="border-t border-gray-200 pt-8 mb-8">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Configuração de Preços</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="baseCategoryPrice" class="block text-sm font-medium text-gray-700 mb-2">
+                                Preço da 1ª Categoria (R$)
+                            </label>
+                            <input type="number" 
+                                   id="baseCategoryPrice" 
+                                   name="baseCategoryPrice" 
+                                   class="mobile-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent" 
+                                   placeholder="0.00"
+                                   step="0.01"
+                                   min="0">
+                        </div>
+
+                        <div>
+                            <label for="additionalCategoryPrice" class="block text-sm font-medium text-gray-700 mb-2">
+                                Preço por Categoria Adicional (R$)
+                            </label>
+                            <input type="number" 
+                                   id="additionalCategoryPrice" 
+                                   name="additionalCategoryPrice" 
+                                   class="mobile-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent" 
+                                   placeholder="0.00"
+                                   step="0.01"
+                                   min="0">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Categories Section -->
+                <div class="border-t border-gray-200 pt-8 mb-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">Categorias</h3>
+                            <p class="text-sm text-gray-600">Configure as categorias disponíveis para inscrição</p>
+                        </div>
+                        <button type="button" 
+                                onclick="addCategory()" 
+                                class="bg-accent-600 hover:bg-accent-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 text-sm">
+                            + Adicionar Categoria
+                        </button>
+                    </div>
+
+                    <!-- No Categories Message -->
+                    <div id="noCategoriesMessage" class="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                        <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="text-2xl">🏆</span>
+                        </div>
+                        <h4 class="text-lg font-medium text-gray-900 mb-2">Nenhuma categoria configurada</h4>
+                        <p class="text-sm text-gray-600 mb-4">Adicione pelo menos uma categoria para o campeonato</p>
+                        <button type="button" 
+                                onclick="addCategory()" 
+                                class="bg-accent-600 hover:bg-accent-700 text-white font-medium py-2 px-6 rounded-lg transition-colors duration-200">
+                            Criar Primeira Categoria
+                        </button>
+                    </div>
+
+                    <!-- Categories Container -->
+                    <div id="categoriesContainer" class="space-y-4" style="display: none;"></div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="border-t border-gray-200 pt-6">
+                    <button type="submit" 
+                            class="w-full bg-accent-600 hover:bg-accent-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 text-lg">
+                        Criar Campeonato
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script src="admin-header.js"></script>
+    <script>
+        // Tournament creation class
+        class TournamentCreator {
+            constructor() {
+                // Initialize the admin header
+                AdminHeader.init('create-tournament');
+
+                this.form = document.getElementById('tournamentForm');
+                this.alertContainer = document.getElementById('alertContainer');
+                
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.setupMobileOptimizations();
+                updateCategoriesVisibility(); // Initialize categories visibility
+            }
+
+            setupEventListeners() {
+                this.form.addEventListener('submit', this.handleSubmit.bind(this));
+                this.form.addEventListener('input', this.handleFormInput.bind(this));
+            }
+
+            setupMobileOptimizations() {
+                // Prevent zoom on input focus on iOS
+                const inputs = document.querySelectorAll('input, textarea, select');
+                inputs.forEach(input => {
+                    input.addEventListener('focus', () => {
+                        input.style.fontSize = '16px';
+                    });
+                });
+
+                // Handle orientation change
+                window.addEventListener('orientationchange', () => {
+                    setTimeout(() => {
+                        window.scrollTo(0, 0);
+                    }, 500);
+                });
+            }
+
+            handleFormInput(event) {
+                // Enhanced error removal with animation
+                if (event.target.classList.contains('form-error')) {
+                    event.target.classList.remove('form-error');
+                    event.target.style.transform = 'scale(1)';
+                }
+                
+                // Real-time validation feedback
+                const field = event.target;
+                if (field.value.trim()) {
+                    field.classList.add('border-green-300');
+                    field.classList.remove('border-gray-200');
+                } else {
+                    field.classList.remove('border-green-300');
+                    field.classList.add('border-gray-200');
+                }
+            }
+
+            async handleSubmit(event) {
+                event.preventDefault();
+                
+                const submitBtn = event.target.querySelector('button[type="submit"]');
+                const originalText = submitBtn.textContent;
+                
+                try {
+                    // Mobile loading state with enhanced UX
+                    submitBtn.innerHTML = `
+                        <div class="flex items-center justify-center gap-3">
+                            <div class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            <span>Criando campeonato...</span>
+                        </div>
+                    `;
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+
+                    const formData = this.getFormData();
+                    
+                    // Debug log
+                    console.log('🔍 DEBUG - Sending form data:', JSON.stringify(formData, null, 2));
+                    
+                    if (!this.validateForm(formData)) {
+                        return;
+                    }
+
+                    const response = await fetch('/api/tournaments', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...AdminHeader.getAuthHeaders()
+                        },
+                        body: JSON.stringify(formData)
+                    });
+
+                    const result = await response.json();
+
+                    if (response.status === 401) {
+                        // Unauthorized - redirect to login
+                        this.showAlert('error', 'Sessão expirada. Redirecionando para login...');
+                        setTimeout(() => {
+                            window.location.href = '/login.html';
+                        }, 2000);
+                        return;
+                    }
+
+                    if (response.ok) {
+                        // Success feedback
+                        this.showAlert('success', `
+                            <div class="flex items-start gap-4">
+                                <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <span class="text-white font-bold">✓</span>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-semibold text-lg mb-2">Campeonato criado com sucesso!</h4>
+                                    <p class="text-sm mb-3">Seu campeonato está pronto para receber inscrições.</p>
+                                    <div class="bg-green-50 rounded-lg p-4">
+                                        <p class="font-medium mb-2">Link de Inscrições:</p>
+                                        <div class="bg-white rounded-md p-3 flex items-center gap-3">
+                                            <code class="flex-1 text-sm font-mono break-all text-gray-700">${result.registrationLink}</code>
+                                            <button onclick="navigator.clipboard.writeText('${result.registrationLink}')" 
+                                                    class="px-3 py-1 bg-green-600 text-white rounded-md text-xs font-medium hover:bg-green-700 transition-colors">
+                                                Copiar
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 flex gap-3">
+                                        <button onclick="window.location.href='/admin/'" 
+                                                class="px-4 py-2 bg-accent-600 text-white rounded-md text-sm font-medium hover:bg-accent-700 transition-colors">
+                                            Voltar ao Dashboard
+                                        </button>
+                                        <button onclick="location.reload()" 
+                                                class="px-4 py-2 bg-gray-600 text-white rounded-md text-sm font-medium hover:bg-gray-700 transition-colors">
+                                            Criar Outro
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `);
+                        
+                        // Scroll to alert
+                        setTimeout(() => {
+                            this.alertContainer.scrollIntoView({ 
+                                behavior: 'smooth', 
+                                block: 'center' 
+                            });
+                        }, 200);
+                        
+                    } else {
+                        this.showAlert('error', `
+                            <div class="flex items-start gap-4">
+                                <div class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <span class="text-white font-bold">!</span>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-semibold text-lg mb-2">Erro ao criar campeonato</h4>
+                                    <p class="text-sm">${result.error}</p>
+                                </div>
+                            </div>
+                        `);
+                    }
+
+                } catch (error) {
+                    console.error('Error:', error);
+                    this.showAlert('error', `
+                        <div class="flex items-start gap-4">
+                            <div class="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                <span class="text-white text-xl">⚠</span>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-lg mb-2">Erro de conexão</h4>
+                                <p class="text-sm">Verifique sua conexão com a internet e tente novamente.</p>
+                            </div>
+                        </div>
+                    `);
+                } finally {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+                }
+            }
+
+            getFormData() {
+                // Collect custom categories
+                const categories = [];
+                const categoryCards = document.querySelectorAll('.category-card');
+                
+                categoryCards.forEach(card => {
+                    const categoryId = card.dataset.categoryId;
+                    const name = card.querySelector('.category-name').value.trim();
+                    const players = parseInt(card.querySelector('.category-players').value) || 1;
+                    const description = card.querySelector('.category-description').value.trim();
+                    
+                    if (name) {
+                        categories.push({
+                            id: categoryId,
+                            name: name,
+                            playersPerTeam: players,
+                            description: description || `Categoria ${name} - ${players} jogador${players > 1 ? 'es' : ''} por time`
+                        });
+                    }
+                });
+
+                return {
+                    name: document.getElementById('tournamentName').value.trim(),
+                    categories,
+                    maxRegistrations: document.getElementById('maxRegistrations').value || null,
+                    startDate: document.getElementById('startDate').value,
+                    endDate: document.getElementById('endDate').value,
+                    location: document.getElementById('location').value.trim(),
+                    baseCategoryPrice: parseFloat(document.getElementById('baseCategoryPrice').value) || 0,
+                    additionalCategoryPrice: parseFloat(document.getElementById('additionalCategoryPrice').value) || 0,
+                    webhook: document.getElementById('webhook').value.trim() || null
+                };
+            }
+
+            validateForm(data) {
+                let isValid = true;
+                const errors = [];
+
+                // Enhanced validation with better UX
+                if (!data.name) {
+                    errors.push('Nome do campeonato é obrigatório');
+                    const field = document.getElementById('tournamentName');
+                    field.classList.add('form-error');
+                    field.style.transform = 'scale(1.02)';
+                    setTimeout(() => field.style.transform = 'scale(1)', 200);
+                    isValid = false;
+                }
+
+                if (data.categories.length === 0) {
+                    errors.push('Adicione pelo menos uma categoria');
+                    // Highlight categories section
+                    const addButton = document.querySelector('button[onclick="addCategory()"]');
+                    addButton.style.animation = 'pulse 0.5s ease-in-out 3';
+                    setTimeout(() => addButton.style.animation = '', 2000);
+                    isValid = false;
+                } else {
+                    // Validate each category
+                    let categoryErrors = [];
+                    data.categories.forEach((category, index) => {
+                        if (!category.name) {
+                            categoryErrors.push(`Categoria ${index + 1}: Nome é obrigatório`);
+                            const nameField = document.querySelector(`[data-category-id="${category.id}"] .category-name`);
+                            if (nameField) {
+                                nameField.classList.add('form-error');
+                                nameField.style.transform = 'scale(1.02)';
+                                setTimeout(() => nameField.style.transform = 'scale(1)', 200);
+                            }
+                            isValid = false;
+                        }
+                        
+                        if (category.playersPerTeam < 1 || category.playersPerTeam > 10) {
+                            categoryErrors.push(`Categoria ${index + 1}: Número de jogadores deve ser entre 1 e 10`);
+                            const playersField = document.querySelector(`[data-category-id="${category.id}"] .category-players`);
+                            if (playersField) {
+                                playersField.classList.add('form-error');
+                                playersField.style.transform = 'scale(1.02)';
+                                setTimeout(() => playersField.style.transform = 'scale(1)', 200);
+                            }
+                            isValid = false;
+                        }
+                    });
+                    errors.push(...categoryErrors);
+                }
+
+                if (!data.startDate || !data.endDate) {
+                    errors.push('Datas de início e término são obrigatórias');
+                    [document.getElementById('startDate'), document.getElementById('endDate')].forEach(field => {
+                        if (!field.value) {
+                            field.classList.add('form-error');
+                            field.style.transform = 'scale(1.02)';
+                            setTimeout(() => field.style.transform = 'scale(1)', 200);
+                        }
+                    });
+                    isValid = false;
+                }
+
+                if (data.startDate && data.endDate && new Date(data.startDate) >= new Date(data.endDate)) {
+                    errors.push('Data de início deve ser anterior à data de término');
+                    [document.getElementById('startDate'), document.getElementById('endDate')].forEach(field => {
+                        field.classList.add('form-error');
+                        field.style.transform = 'scale(1.02)';
+                        setTimeout(() => field.style.transform = 'scale(1)', 200);
+                    });
+                    isValid = false;
+                }
+
+                if (!data.location) {
+                    errors.push('Local do evento é obrigatório');
+                    const field = document.getElementById('location');
+                    field.classList.add('form-error');
+                    field.style.transform = 'scale(1.02)';
+                    setTimeout(() => field.style.transform = 'scale(1)', 200);
+                    isValid = false;
+                }
+
+                if (!isValid) {
+                    this.showAlert('error', `
+                        <div class="flex items-start gap-4">
+                            <div class="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                <span class="text-white text-xl">!</span>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-lg mb-2">Campos obrigatórios</h4>
+                                <ul class="text-sm space-y-1">
+                                    ${errors.map(error => `<li>• ${error}</li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                    `);
+                }
+
+                return isValid;
+            }
+
+            resetCategories() {
+                document.getElementById('categoriesContainer').innerHTML = '';
+                categoryCounter = 0;
+                categories = [];
+                updateCategoriesVisibility();
+            }
+
+            showAlert(type, message) {
+                const alertClass = type === 'success' 
+                    ? 'bg-green-50 border border-green-200 text-green-800 px-6 py-4 rounded-lg mb-6' 
+                    : 'bg-red-50 border border-red-200 text-red-800 px-6 py-4 rounded-lg mb-6';
+                
+                this.alertContainer.innerHTML = `
+                    <div class="${alertClass}">
+                        ${message}
+                    </div>
+                `;
+
+                setTimeout(() => {
+                    if (type !== 'success') {
+                        this.alertContainer.innerHTML = '';
+                    }
+                }, 8000);
+            }
+        }
+
+        // Global variables for category management
+        let categoryCounter = 0;
+        let categories = [];
+
+        // Global function for adding new category
+        function addCategory() {
+            categoryCounter++;
+            const categoryId = `category-${categoryCounter}`;
+            
+            const categoryHtml = `
+                <div class="category-card bg-gray-50 border border-gray-200 rounded-lg p-4 animate-fade-in" data-category-id="${categoryId}">
+                    <div class="flex items-start justify-between mb-4">
+                        <h4 class="text-sm font-medium text-gray-900">Categoria ${categoryCounter}</h4>
+                        <button type="button" onclick="removeCategory('${categoryId}')" class="text-red-600 hover:text-red-800 text-sm font-medium transition-colors">
+                            Remover
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Nome da Categoria *
+                            </label>
+                            <input type="text" 
+                                   class="category-name w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent text-sm" 
+                                   placeholder="Ex: Individual Masculino, Dupla Feminina..." 
+                                   data-category-id="${categoryId}"
+                                   onchange="validateCategory('${categoryId}')"
+                                   required>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Jogadores por Time *
+                            </label>
+                            <input type="number" 
+                                   class="category-players w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent text-sm" 
+                                   placeholder="1" 
+                                   min="1" 
+                                   max="10"
+                                   data-category-id="${categoryId}"
+                                   value="1"
+                                   onchange="validateCategory('${categoryId}')"
+                                   required>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Descrição
+                        </label>
+                        <textarea class="category-description w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent text-sm resize-none" 
+                                  rows="2" 
+                                  placeholder="Descrição opcional da categoria..."
+                                  data-category-id="${categoryId}"
+                                  onchange="validateCategory('${categoryId}')"></textarea>
+                    </div>
+                    
+                    <!-- Status indicator -->
+                    <div class="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-md" id="status-${categoryId}">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <span class="text-xs text-blue-700">Categoria criada! Preencha os campos obrigatórios.</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('categoriesContainer').insertAdjacentHTML('beforeend', categoryHtml);
+            updateCategoriesVisibility();
+            
+            // Focus on the name field of the new category
+            setTimeout(() => {
+                const nameField = document.querySelector(`[data-category-id="${categoryId}"] .category-name`);
+                if (nameField) nameField.focus();
+            }, 100);
+        }
+
+        // Global function for validating category
+        function validateCategory(categoryId) {
+            const card = document.querySelector(`[data-category-id="${categoryId}"]`);
+            if (!card) return;
+            
+            const nameField = card.querySelector('.category-name');
+            const playersField = card.querySelector('.category-players');
+            const statusDiv = document.getElementById(`status-${categoryId}`);
+            
+            const name = nameField.value.trim();
+            const players = parseInt(playersField.value) || 1;
+            
+            let isValid = true;
+            let statusMessage = '';
+            let statusClass = '';
+            
+            if (name && players >= 1 && players <= 10) {
+                // Category is valid
+                statusMessage = `✓ Categoria "${name}" configurada (${players} jogador${players > 1 ? 'es' : ''} por time)`;
+                statusClass = 'bg-green-50 border-green-200';
+                statusDiv.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span class="text-xs text-green-700">${statusMessage}</span>
+                    </div>
+                `;
+                statusDiv.className = `mt-3 p-2 ${statusClass} rounded-md`;
+                
+                // Remove error styling
+                nameField.classList.remove('border-red-300', 'bg-red-50');
+                playersField.classList.remove('border-red-300', 'bg-red-50');
+                
+            } else {
+                // Category has issues
+                let issues = [];
+                if (!name) {
+                    issues.push('nome obrigatório');
+                    nameField.classList.add('border-red-300', 'bg-red-50');
+                } else {
+                    nameField.classList.remove('border-red-300', 'bg-red-50');
+                }
+                
+                if (players < 1 || players > 10) {
+                    issues.push('jogadores deve ser entre 1-10');
+                    playersField.classList.add('border-red-300', 'bg-red-50');
+                } else {
+                    playersField.classList.remove('border-red-300', 'bg-red-50');
+                }
+                
+                statusMessage = `⚠ Pendente: ${issues.join(', ')}`;
+                statusClass = 'bg-yellow-50 border-yellow-200';
+                statusDiv.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                        <span class="text-xs text-yellow-700">${statusMessage}</span>
+                    </div>
+                `;
+                statusDiv.className = `mt-3 p-2 ${statusClass} rounded-md`;
+            }
+            
+            // Update submit button
+            updateSubmitButton();
+        }
+
+        // Global function for removing category
+        function removeCategory(categoryId) {
+            const categoryElement = document.querySelector(`[data-category-id="${categoryId}"]`);
+            if (categoryElement) {
+                categoryElement.remove();
+                updateCategoriesVisibility();
+                updateSubmitButton();
+            }
+        }
+
+        // Update categories container visibility
+        function updateCategoriesVisibility() {
+            const container = document.getElementById('categoriesContainer');
+            const noMessage = document.getElementById('noCategoriesMessage');
+            const hasCategories = container.children.length > 0;
+            
+            if (hasCategories) {
+                noMessage.style.display = 'none';
+                container.style.display = 'block';
+                updateSubmitButton();
+            } else {
+                noMessage.style.display = 'block';
+                container.style.display = 'none';
+                updateSubmitButton();
+            }
+        }
+
+        // Update submit button with category count
+        function updateSubmitButton() {
+            const submitButton = document.querySelector('button[type="submit"]');
+            const categoryCards = document.querySelectorAll('.category-card');
+            const validCategories = Array.from(categoryCards).filter(card => {
+                const name = card.querySelector('.category-name').value.trim();
+                const players = parseInt(card.querySelector('.category-players').value) || 0;
+                return name && players >= 1 && players <= 10;
+            });
+            
+            if (categoryCards.length === 0) {
+                submitButton.textContent = 'Criar Campeonato';
+            } else if (validCategories.length === categoryCards.length && validCategories.length > 0) {
+                submitButton.textContent = `Criar Campeonato (${validCategories.length} categoria${validCategories.length > 1 ? 's' : ''} configurada${validCategories.length > 1 ? 's' : ''})`;
+            } else {
+                submitButton.textContent = `Criar Campeonato (${validCategories.length}/${categoryCards.length} categoria${categoryCards.length > 1 ? 's' : ''} válida${validCategories.length !== 1 ? 's' : ''})`;
+            }
+        }
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', () => {
+            new TournamentCreator();
+        });
+    </script>
+</body>
+</html>

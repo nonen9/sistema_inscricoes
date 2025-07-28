@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inscrição - Sistema de Campeonatos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            500: '#0f172a',
+                            600: '#020617',
+                            700: '#020617'
+                        },
+                        accent: {
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200">
+        <div class="max-w-4xl mx-auto px-4 py-6">
+            <div class="text-center">
+                <h1 class="text-2xl font-bold text-gray-900 mb-2" id="tournamentTitle">Inscrição no Campeonato</h1>
+                <p class="text-gray-600">Preencha os dados para se inscrever</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Tournament Info -->
+    <div class="max-w-4xl mx-auto px-4 py-8">
+        <div class="bg-white rounded-lg border border-gray-200 shadow-sm mb-6" id="tournamentInfo" style="display: none;">
+            <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Informações do Campeonato</h2>
+            </div>
+            <div class="p-6 space-y-3 text-sm">
+                <div class="flex items-center space-x-2">
+                    <span class="font-medium text-gray-700">Período:</span>
+                    <span id="tournamentDates" class="text-gray-600"></span>
+                </div>
+                <div class="flex items-start space-x-2">
+                    <span class="font-medium text-gray-700">Local:</span>
+                    <span id="tournamentLocation" class="text-gray-600"></span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="font-medium text-gray-700">Categorias:</span>
+                    <div id="tournamentCategories" class="flex flex-wrap gap-1"></div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="font-medium text-gray-700">Preços:</span>
+                    <span id="tournamentPrices" class="text-gray-600"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto px-4 pb-8">
+        <!-- Loading State -->
+        <div id="loadingContainer" class="bg-white rounded-lg border border-gray-200 shadow-sm mb-6">
+            <div class="p-8 text-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-500 mx-auto mb-4"></div>
+                <p class="text-gray-600">Carregando dados do campeonato...</p>
+            </div>
+        </div>
+
+        <!-- Registration Form -->
+        <div class="bg-white rounded-lg border border-gray-200 shadow-sm mb-6" id="formContainer" style="display: none;">
+            <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Formulário de Inscrição</h2>
+            </div>
+            <div class="p-6">
+                <form id="registrationForm" class="space-y-6">
+                    <!-- Player 1 -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+                            Dados do Jogador
+                        </h3>
+                        
+                        <div class="space-y-1">
+                            <label for="player1Name" class="block text-sm font-medium text-gray-700">Nome Completo *</label>
+                            <input type="text" id="player1Name" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent" 
+                                   placeholder="Nome completo do jogador" required>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label for="player1CPF" class="block text-sm font-medium text-gray-700">CPF *</label>
+                            <input type="text" id="player1CPF" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent" 
+                                   placeholder="000.000.000-00" maxlength="14" required>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="space-y-1">
+                                <label for="player1Email" class="block text-sm font-medium text-gray-700">E-mail *</label>
+                                <input type="email" id="player1Email" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent" 
+                                       placeholder="email@exemplo.com" required>
+                            </div>
+
+                            <div class="space-y-1">
+                                <label for="player1Phone" class="block text-sm font-medium text-gray-700">Telefone *</label>
+                                <input type="tel" id="player1Phone" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent" 
+                                       placeholder="(11) 99999-9999" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Partner Sections -->
+                    <div id="partnersContainer">
+                        <!-- Partner sections will be dynamically created here -->
+                    </div>
+
+                    <!-- Categories -->
+                    <div class="space-y-3">
+                        <label class="block text-sm font-medium text-gray-700">Categorias *</label>
+                        <p class="text-xs text-gray-500 mb-3">Selecione as categorias que deseja participar</p>
+                        <div id="categoriesContainer" class="space-y-3">
+                            <!-- Categories will be populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Price Summary -->
+                    <div class="bg-gray-50 rounded-md p-4 border border-gray-200" id="priceSummary" style="display: none;">
+                        <h4 class="font-medium text-gray-900 mb-2">Resumo de Valores</h4>
+                        <div id="priceBreakdown" class="space-y-1 text-sm"></div>
+                        <div class="border-t border-gray-300 pt-2 mt-2">
+                            <div class="flex justify-between items-center font-medium">
+                                <span>Total:</span>
+                                <span id="totalPrice" class="text-lg text-accent-600">R$ 0,00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-accent-600 hover:bg-accent-700 text-white font-medium py-3 px-4 rounded-md transition-colors duration-200" id="submitBtn">
+                        Confirmar Inscrição
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Alert Messages -->
+        <div id="alertContainer"></div>
+    </main>
+
+    <script>
+        class TournamentRegistration {
+            constructor() {
+                this.form = document.getElementById('registrationForm');
+                this.alertContainer = document.getElementById('alertContainer');
+                this.tournamentData = null;
+                this.selectedCategories = new Set();
+                
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.loadTournamentData();
+                this.setupMobileOptimizations();
+            }
+
+            setupEventListeners() {
+                this.form.addEventListener('submit', this.handleSubmit.bind(this));
+            }
+
+            setupMobileOptimizations() {
+                // Prevent zoom on input focus on iOS
+                const inputs = document.querySelectorAll('input, textarea, select');
+                inputs.forEach(input => {
+                    input.addEventListener('focus', () => {
+                        input.style.fontSize = '16px';
+                    });
+                });
+
+                // Handle orientation change
+                window.addEventListener('orientationchange', () => {
+                    setTimeout(() => {
+                        window.scrollTo(0, 0);
+                    }, 500);
+                });
+
+                // Phone mask
+                document.getElementById('player1Phone').addEventListener('input', this.formatPhone);
+                document.getElementById('player2Phone').addEventListener('input', this.formatPhone);
+
+                // CPF mask
+                document.getElementById('player1CPF').addEventListener('input', this.formatCPF);
+                document.getElementById('player1CPF').addEventListener('blur', this.validateCPF);
+            }
+
+            formatPhone(event) {
+                let value = event.target.value.replace(/\D/g, '');
+                value = value.replace(/^(\d{2})(\d)/g, '($1) $2');
+                value = value.replace(/(\d)(\d{4})$/, '$1-$2');
+                event.target.value = value;
+            }
+
+            formatCPF(event) {
+                let value = event.target.value.replace(/\D/g, '');
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+                event.target.value = value;
+            }
+
+            validateCPF(event) {
+                const cpf = event.target.value.replace(/\D/g, '');
+                if (cpf.length === 11 && !this.isValidCPF(cpf)) {
+                    event.target.classList.add('border-red-400');
+                    this.showAlert('error', '❌ CPF inválido. Verifique os números digitados.');
+                } else {
+                    event.target.classList.remove('border-red-400');
+                }
+            }
+
+            isValidCPF(cpf) {
+                if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+                
+                let sum = 0;
+                for (let i = 0; i < 9; i++) {
+                    sum += parseInt(cpf.charAt(i)) * (10 - i);
+                }
+                let remainder = (sum * 10) % 11;
+                if (remainder === 10 || remainder === 11) remainder = 0;
+                if (remainder !== parseInt(cpf.charAt(9))) return false;
+                
+                sum = 0;
+                for (let i = 0; i < 10; i++) {
+                    sum += parseInt(cpf.charAt(i)) * (11 - i);
+                }
+                remainder = (sum * 10) % 11;
+                if (remainder === 10 || remainder === 11) remainder = 0;
+                return remainder === parseInt(cpf.charAt(10));
+            }
+
+            async loadTournamentData() {
+                try {
+                    const tournamentId = this.getTournamentIdFromUrl();
+                    if (!tournamentId) {
+                        this.showAlert('error', '❌ ID do campeonato não encontrado na URL.');
+                        document.getElementById('loadingContainer').style.display = 'none';
+                        return;
+                    }
+
+                    const response = await fetch(`/api/tournaments/${tournamentId}`);
+                    
+                    if (!response.ok) {
+                        throw new Error('Campeonato não encontrado');
+                    }
+
+                    this.tournamentData = await response.json();
+                    this.displayTournamentInfo();
+                    this.setupCategories();
+                    
+                    // Hide loading and show form
+                    document.getElementById('loadingContainer').style.display = 'none';
+                    document.getElementById('formContainer').style.display = 'block';
+
+                } catch (error) {
+                    console.error('Error loading tournament:', error);
+                    document.getElementById('loadingContainer').style.display = 'none';
+                    this.showAlert('error', '❌ Erro ao carregar dados do campeonato. Verifique se o link está correto.');
+                }
+            }
+
+            getTournamentIdFromUrl() {
+                const path = window.location.pathname;
+                const match = path.match(/\/register\/(.+)/);
+                return match ? match[1] : null;
+            }
+
+            displayTournamentInfo() {
+                const tournament = this.tournamentData;
+                
+                document.getElementById('tournamentTitle').textContent = `🏆 ${tournament.name}`;
+                document.getElementById('tournamentDates').textContent = 
+                    `${new Date(tournament.startDate).toLocaleDateString('pt-BR')} - ${new Date(tournament.endDate).toLocaleDateString('pt-BR')}`;
+                document.getElementById('tournamentLocation').textContent = tournament.location;
+                
+                const categoriesContainer = document.getElementById('tournamentCategories');
+                categoriesContainer.innerHTML = tournament.categories
+                    .map(cat => {
+                        // Handle both old format (string) and new format (object)
+                        const categoryName = typeof cat === 'string' ? cat : cat.name;
+                        const playersInfo = typeof cat === 'object' ? ` (${cat.playersPerTeam} jogador${cat.playersPerTeam > 1 ? 'es' : ''})` : '';
+                        return `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">${categoryName}${playersInfo}</span>`;
+                    })
+                    .join('');
+                
+                document.getElementById('tournamentPrices').textContent = 
+                    `1ª categoria: R$ ${tournament.baseCategoryPrice.toFixed(2)} | Adicional: R$ ${tournament.additionalCategoryPrice.toFixed(2)}`;
+                
+                document.getElementById('tournamentInfo').style.display = 'block';
+            }
+
+            setupCategories() {
+                const container = document.getElementById('categoriesContainer');
+                const tournament = this.tournamentData;
+
+                container.innerHTML = tournament.categories.map(category => {
+                    // Handle both old format (string) and new format (object)
+                    const categoryName = typeof category === 'string' ? category : category.name;
+                    const categoryId = typeof category === 'string' ? category : category.id;
+                    const playersInfo = typeof category === 'object' ? ` (${category.playersPerTeam} jogador${category.playersPerTeam > 1 ? 'es' : ''})` : '';
+                    
+                    return `
+                        <div class="category-item p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-primary-300 transition-colors" 
+                             data-category="${categoryName}" data-category-id="${categoryId}">
+                            <div class="flex items-center space-x-3">
+                                <input type="checkbox" id="category${categoryId}" name="categories" value="${categoryName}" 
+                                       class="w-5 h-5 text-primary-600">
+                                <label for="category${categoryId}" class="flex-1 cursor-pointer text-base font-medium">
+                                    ${this.getCategoryIcon(categoryName)} ${categoryName} ${this.getCategoryDescription(categoryName)}${playersInfo}
+                                </label>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Add event listeners
+                container.querySelectorAll('.category-item').forEach(item => {
+                    item.addEventListener('click', this.handleCategoryClick.bind(this));
+                });
+
+                container.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.addEventListener('change', this.handleCategoryChange.bind(this));
+                });
+            }
+
+            getCategoryIcon(category) {
+                // Removed icons for cleaner interface
+                return '';
+            }
+
+            getCategoryDescription(category) {
+                const descriptions = {
+                    'X1': '(Individual)',
+                    'X2': '(Dupla)',
+                    'Misto': '(Dupla Mista)'
+                };
+                return descriptions[category] || '';
+            }
+
+            handleCategoryClick(event) {
+                if (event.target.tagName !== 'INPUT') {
+                    const checkbox = event.currentTarget.querySelector('input[type="checkbox"]');
+                    checkbox.checked = !checkbox.checked;
+                    this.handleCategoryChange({ target: checkbox });
+                }
+            }
+
+            handleCategoryChange(event) {
+                const checkbox = event.target;
+                const category = checkbox.value;
+                const categoryItem = checkbox.closest('.category-item');
+
+                if (checkbox.checked) {
+                    this.selectedCategories.add(category);
+                    categoryItem.classList.add('bg-primary-50', 'border-primary-400');
+                    categoryItem.classList.remove('border-gray-200');
+                } else {
+                    this.selectedCategories.delete(category);
+                    categoryItem.classList.remove('bg-primary-50', 'border-primary-400');
+                    categoryItem.classList.add('border-gray-200');
+                }
+
+                this.updatePlayerSections();
+                this.updatePriceSummary();
+            }
+
+            updatePlayerSections() {
+                const selectedCategoriesArray = Array.from(this.selectedCategories);
+                
+                // Find categories that need partner based on category data
+                const categoriesNeedingPartner = selectedCategoriesArray.filter(categoryName => {
+                    // Find the category object from tournament data
+                    const categoryObj = this.tournamentData.categories.find(cat => {
+                        const catName = typeof cat === 'string' ? cat : cat.name;
+                        return catName === categoryName;
+                    });
+                    
+                    // Check if category needs partner (more than 1 player or old naming convention)
+                    if (typeof categoryObj === 'object' && categoryObj.playersPerTeam > 1) {
+                        return true;
+                    }
+                    
+                    // Fallback for old string-based categories
+                    return categoryName === 'X2' || categoryName === 'Misto';
+                });
+                
+                const partnersContainer = document.getElementById('partnersContainer');
+                
+                // Clear existing partner sections
+                partnersContainer.innerHTML = '';
+                
+                if (categoriesNeedingPartner.length === 0) {
+                    return;
+                }
+                
+                // Create partner sections for each category that needs one
+                categoriesNeedingPartner.forEach((category, index) => {
+                    // Find the category object to get more info
+                    const categoryObj = this.tournamentData.categories.find(cat => {
+                        const catName = typeof cat === 'string' ? cat : cat.name;
+                        return catName === category;
+                    });
+                    
+                    // Determine if it's mixed category (check name for "mist" keyword)
+                    const isMisto = category.toLowerCase().includes('mist') || category === 'Misto';
+                    const isX2 = category === 'X2' || (!isMisto && categoryObj && categoryObj.playersPerTeam === 2);
+                    
+                    const partnerSection = document.createElement('div');
+                    partnerSection.className = 'space-y-4 partner-section';
+                    partnerSection.setAttribute('data-category', category);
+                    
+                    const title = isMisto ? `Dados do(a) Parceiro(a) - ${category}` : `Dados do Parceiro - ${category}`;
+                    const namePlaceholder = isMisto ? 'Nome completo do(a) parceiro(a)' : 'Nome completo do parceiro';
+                    const emailPlaceholder = isMisto ? 'parceiro@exemplo.com' : 'parceiro@exemplo.com';
+                    
+                    partnerSection.innerHTML = `
+                        <h3 class="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">
+                            ${title}
+                        </h3>
+                        
+                        <div class="space-y-1">
+                            <label for="partner${category}Name" class="block text-sm font-medium text-gray-700">
+                                Nome Completo ${isMisto ? 'do(a) Parceiro(a)' : 'do Parceiro'} *
+                            </label>
+                            <input type="text" id="partner${category}Name" 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base" 
+                                   placeholder="${namePlaceholder}" required>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label for="partner${category}CPF" class="block text-sm font-medium text-gray-700">
+                                CPF ${isMisto ? 'do(a) Parceiro(a)' : 'do Parceiro'} *
+                            </label>
+                            <input type="text" id="partner${category}CPF" 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base" 
+                                   placeholder="000.000.000-00" maxlength="14" required>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="space-y-1">
+                                <label for="partner${category}Email" class="block text-sm font-medium text-gray-700">
+                                    E-mail ${isMisto ? 'do(a) Parceiro(a)' : 'do Parceiro'} *
+                                </label>
+                                <input type="email" id="partner${category}Email" 
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base" 
+                                       placeholder="${emailPlaceholder}" required>
+                            </div>
+
+                            <div class="space-y-1">
+                                <label for="partner${category}Phone" class="block text-sm font-medium text-gray-700">
+                                    Telefone ${isMisto ? 'do(a) Parceiro(a)' : 'do Parceiro'} *
+                                </label>
+                                <input type="tel" id="partner${category}Phone" 
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base" 
+                                       placeholder="(11) 99999-9999" required>
+                            </div>
+                        </div>
+                        
+                        ${categoriesNeedingPartner.length > 1 ? `
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <p class="text-sm text-blue-700">
+                                <strong>💡 Dica:</strong> ${isMisto ? 'Este(a) parceiro(a)' : 'Este parceiro'} será específico para a categoria <strong>${category}</strong>.
+                                ${index < categoriesNeedingPartner.length - 1 ? 'Você pode ter parceiros diferentes para cada categoria.' : ''}
+                            </p>
+                        </div>
+                        ` : ''}
+                    `;
+                    
+                    partnersContainer.appendChild(partnerSection);
+                    
+                    // Add phone mask to the new phone input
+                    const phoneInput = partnerSection.querySelector(`#partner${category}Phone`);
+                    phoneInput.addEventListener('input', this.formatPhone);
+
+                    // Add CPF mask and validation to the new CPF input
+                    const cpfInput = partnerSection.querySelector(`#partner${category}CPF`);
+                    cpfInput.addEventListener('input', this.formatCPF);
+                    cpfInput.addEventListener('blur', this.validateCPF);
+                });
+            }
+
+            updatePriceSummary() {
+                const selectedCount = this.selectedCategories.size;
+                const priceSummary = document.getElementById('priceSummary');
+                
+                if (selectedCount === 0) {
+                    priceSummary.style.display = 'none';
+                    return;
+                }
+
+                const tournament = this.tournamentData;
+                const basePrice = tournament.baseCategoryPrice;
+                const additionalPrice = tournament.additionalCategoryPrice;
+                
+                let total = basePrice;
+                if (selectedCount > 1) {
+                    total += (selectedCount - 1) * additionalPrice;
+                }
+
+                const breakdown = document.getElementById('priceBreakdown');
+                let breakdownHTML = `<div>1ª categoria: R$ ${basePrice.toFixed(2)}</div>`;
+                
+                if (selectedCount > 1) {
+                    const additionalCount = selectedCount - 1;
+                    const additionalTotal = additionalCount * additionalPrice;
+                    breakdownHTML += `<div>${additionalCount} categoria${additionalCount > 1 ? 's' : ''} adicional${additionalCount > 1 ? 'is' : ''}: R$ ${additionalTotal.toFixed(2)}</div>`;
+                }
+
+                breakdown.innerHTML = breakdownHTML;
+                document.getElementById('totalPrice').textContent = `R$ ${total.toFixed(2)}`;
+                
+                priceSummary.style.display = 'block';
+            }
+
+            async handleSubmit(event) {
+                event.preventDefault();
+                
+                const submitBtn = document.getElementById('submitBtn');
+                const originalText = submitBtn.textContent;
+                
+                try {
+                    submitBtn.textContent = '⏳ Processando...';
+                    submitBtn.disabled = true;
+
+                    const formData = this.getFormData();
+                    console.log('Form data antes da validação:', formData);
+                    
+                    if (!this.validateForm(formData)) {
+                        return;
+                    }
+
+                    console.log('Form data após validação:', formData);
+
+                    const tournamentId = this.getTournamentIdFromUrl();
+                    const response = await fetch(`/api/tournaments/${tournamentId}/register`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(formData)
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        // Build partner emails list for confirmation
+                        const partnerEmails = Object.values(formData.partners || {})
+                            .map(partner => partner.email)
+                            .filter(email => email);
+                        
+                        const allEmails = [formData.player1.email, ...partnerEmails].join(', ');
+                        
+                        // Build partner info for display
+                        const partnerInfo = Object.entries(formData.partners || {})
+                            .map(([category, partner]) => `${category}: ${partner.name}`)
+                            .join('<br>');
+                        
+                        this.showAlert('success', `
+                            <div class="flex items-start gap-3">
+                                <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <span class="text-white font-bold text-sm">✓</span>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-medium text-lg mb-2">Inscrição realizada com sucesso!</h4>
+                                    <div class="text-sm space-y-1">
+                                        <p><strong>E-mail de confirmação enviado para:</strong><br>${allEmails}</p>
+                                        <p><strong>Total:</strong> R$ ${(result.totalPrice || formData.totalPrice).toFixed(2)}</p>
+                                        <p><strong>Categorias:</strong> ${formData.categories.join(', ')}</p>
+                                        ${partnerInfo ? `<p><strong>Parceiros:</strong><br>${partnerInfo}</p>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `);
+                        
+                        this.form.reset();
+                        this.selectedCategories.clear();
+                        this.updatePlayerSections();
+                        this.updatePriceSummary();
+                        
+                        // Reset category visual states
+                        document.querySelectorAll('.category-item').forEach(item => {
+                            item.classList.remove('bg-accent-50', 'border-accent-400');
+                            item.classList.add('border-gray-200');
+                        });
+                        
+                        // Smooth scroll to alert
+                        setTimeout(() => {
+                            this.alertContainer.scrollIntoView({ 
+                                behavior: 'smooth', 
+                                block: 'center' 
+                            });
+                        }, 100);
+                        
+                    } else {
+                        this.showAlert('error', `❌ ${result.error}`);
+                    }
+
+                } catch (error) {
+                    console.error('Error:', error);
+                    this.showAlert('error', '❌ Erro de conexão. Tente novamente.');
+                } finally {
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                }
+            }
+
+            getFormData() {
+                const categories = Array.from(this.selectedCategories);
+                
+                // Find categories that need partner based on category data
+                const categoriesNeedingPartner = categories.filter(categoryName => {
+                    // Find the category object from tournament data
+                    const categoryObj = this.tournamentData.categories.find(cat => {
+                        const catName = typeof cat === 'string' ? cat : cat.name;
+                        return catName === categoryName;
+                    });
+                    
+                    // Check if category needs partner (more than 1 player or old naming convention)
+                    if (typeof categoryObj === 'object' && categoryObj.playersPerTeam > 1) {
+                        return true;
+                    }
+                    
+                    // Fallback for old string-based categories
+                    return categoryName === 'X2' || categoryName === 'Misto';
+                });
+
+                const data = {
+                    player1: {
+                        name: document.getElementById('player1Name').value.trim(),
+                        cpf: document.getElementById('player1CPF').value.replace(/\D/g, ''),
+                        email: document.getElementById('player1Email').value.trim(),
+                        phone: document.getElementById('player1Phone').value.trim()
+                    },
+                    categories,
+                    totalPrice: this.calculateTotalPrice(),
+                    partners: {}
+                };
+
+                // Collect partner data for each category that needs one
+                categoriesNeedingPartner.forEach(category => {
+                    const nameElement = document.getElementById(`partner${category}Name`);
+                    const cpfElement = document.getElementById(`partner${category}CPF`);
+                    const emailElement = document.getElementById(`partner${category}Email`);
+                    const phoneElement = document.getElementById(`partner${category}Phone`);
+                    
+                    if (nameElement && cpfElement && emailElement && phoneElement) {
+                        data.partners[category] = {
+                            name: nameElement.value.trim(),
+                            cpf: cpfElement.value.replace(/\D/g, ''),
+                            email: emailElement.value.trim(),
+                            phone: phoneElement.value.trim()
+                        };
+                    }
+                });
+
+                return data;
+            }
+
+            calculateTotalPrice() {
+                const selectedCount = this.selectedCategories.size;
+                if (selectedCount === 0) return 0;
+
+                const tournament = this.tournamentData;
+                let total = tournament.baseCategoryPrice;
+                
+                if (selectedCount > 1) {
+                    total += (selectedCount - 1) * tournament.additionalCategoryPrice;
+                }
+
+                return total;
+            }
+
+            validateForm(data) {
+                let isValid = true;
+                const errors = [];
+
+                // Clear previous error states
+                document.querySelectorAll('input').forEach(input => {
+                    input.classList.remove('border-red-400');
+                });
+
+                // Validate player 1
+                if (!data.player1.name) {
+                    errors.push('Nome do jogador é obrigatório');
+                    document.getElementById('player1Name').classList.add('border-red-400');
+                    isValid = false;
+                }
+
+                if (!data.player1.cpf || !this.isValidCPF(data.player1.cpf)) {
+                    errors.push('CPF válido do jogador é obrigatório');
+                    document.getElementById('player1CPF').classList.add('border-red-400');
+                    isValid = false;
+                }
+
+                if (!data.player1.email || !this.isValidEmail(data.player1.email)) {
+                    errors.push('E-mail válido do jogador é obrigatório');
+                    document.getElementById('player1Email').classList.add('border-red-400');
+                    isValid = false;
+                }
+
+                if (!data.player1.phone) {
+                    errors.push('Telefone do jogador é obrigatório');
+                    document.getElementById('player1Phone').classList.add('border-red-400');
+                    isValid = false;
+                }
+
+                // Validate partners for each category
+                const categoriesNeedingPartner = data.categories.filter(categoryName => {
+                    // Find the category object from tournament data
+                    const categoryObj = this.tournamentData.categories.find(cat => {
+                        const catName = typeof cat === 'string' ? cat : cat.name;
+                        return catName === categoryName;
+                    });
+                    
+                    // Check if category needs partner (more than 1 player or old naming convention)
+                    if (typeof categoryObj === 'object' && categoryObj.playersPerTeam > 1) {
+                        return true;
+                    }
+                    
+                    // Fallback for old string-based categories
+                    return categoryName === 'X2' || categoryName === 'Misto';
+                });
+                
+                categoriesNeedingPartner.forEach(category => {
+                    const partner = data.partners[category];
+                    const categoryLabel = category.toLowerCase().includes('mist') || category === 'Misto' ? 'do(a) parceiro(a)' : 'do parceiro';
+                    
+                    if (!partner || !partner.name) {
+                        errors.push(`Nome ${categoryLabel} da categoria ${category} é obrigatório`);
+                        const nameElement = document.getElementById(`partner${category}Name`);
+                        if (nameElement) nameElement.classList.add('border-red-400');
+                        isValid = false;
+                    }
+
+                    if (!partner || !partner.cpf || !this.isValidCPF(partner.cpf)) {
+                        errors.push(`CPF válido ${categoryLabel} da categoria ${category} é obrigatório`);
+                        const cpfElement = document.getElementById(`partner${category}CPF`);
+                        if (cpfElement) cpfElement.classList.add('border-red-400');
+                        isValid = false;
+                    }
+
+                    if (!partner || !partner.email || !this.isValidEmail(partner.email)) {
+                        errors.push(`E-mail válido ${categoryLabel} da categoria ${category} é obrigatório`);
+                        const emailElement = document.getElementById(`partner${category}Email`);
+                        if (emailElement) emailElement.classList.add('border-red-400');
+                        isValid = false;
+                    }
+
+                    if (!partner || !partner.phone) {
+                        errors.push(`Telefone ${categoryLabel} da categoria ${category} é obrigatório`);
+                        const phoneElement = document.getElementById(`partner${category}Phone`);
+                        if (phoneElement) phoneElement.classList.add('border-red-400');
+                        isValid = false;
+                    }
+                });
+
+                // Validate categories
+                if (data.categories.length === 0) {
+                    errors.push('Selecione pelo menos uma categoria');
+                    isValid = false;
+                }
+
+                if (!isValid) {
+                    this.showAlert('error', `❌ ${errors.join('<br>')}`);
+                }
+
+                return isValid;
+            }
+
+            isValidEmail(email) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                return emailRegex.test(email);
+            }
+
+            showAlert(type, message) {
+                const alertClass = type === 'success' 
+                    ? 'bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg mb-4' 
+                    : 'bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4';
+                
+                this.alertContainer.innerHTML = `
+                    <div class="${alertClass}">
+                        ${message}
+                    </div>
+                `;
+
+                setTimeout(() => {
+                    this.alertContainer.innerHTML = '';
+                }, 10000);
+            }
+        }
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', () => {
+            new TournamentRegistration();
+        });
+    </script>
+
+    <style>
+        /* Estilos customizados para complementar Tailwind */
+        input:focus, textarea:focus, select:focus {
+            font-size: 16px; /* Prevent zoom on iOS */
+        }
+        
+        /* Touch-friendly category selection */
+        .category-item {
+            -webkit-tap-highlight-color: rgba(59, 130, 246, 0.1);
+            user-select: none;
+        }
+        
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* Custom scrollbar para desktop */
+        @media (min-width: 768px) {
+            ::-webkit-scrollbar {
+                width: 8px;
+            }
+            
+            ::-webkit-scrollbar-track {
+                background: #f1f5f9;
+            }
+            
+            ::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 4px;
+            }
+            
+            ::-webkit-scrollbar-thumb:hover {
+                background: #94a3b8;
+            }
+        }
+    </style>
+</body>
+</html>
