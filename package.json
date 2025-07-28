@@ -12,7 +12,8 @@
     "url": "https://github.com/seu-usuario/sistema-campeonatos/issues"
   },
   "scripts": {
-    "start": "node scripts/init-production.js && node server.js",
+    "start": "node scripts/start.js",
+    "start:legacy": "node scripts/init-production.js && node server.js",
     "dev": "node server.js",
     "init": "node scripts/init-production.js",
     "setup": "node generate-hash.js",

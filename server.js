@@ -42,13 +42,28 @@ app.use(express.static('public'));
 
 // Health check endpoint (deve vir antes dos middlewares de auth)
 app.get('/api/health', (req, res) => {
-    res.status(200).json({
+    const checks = {
         status: 'ok',
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         environment: config.environment,
-        version: require('./package.json').version
-    });
+        version: require('./package.json').version,
+        files: {
+            users: fsSync.existsSync(USERS_FILE),
+            tournaments: fsSync.existsSync(DATA_FILE),
+            registrations: fsSync.existsSync(REGISTRATIONS_FILE),
+            players: fsSync.existsSync(PLAYERS_FILE)
+        },
+        userCount: Object.keys(userConfig).length
+    };
+    
+    // Verificar se todos os arquivos essenciais existem
+    const allFilesExist = Object.values(checks.files).every(exists => exists);
+    if (!allFilesExist) {
+        checks.status = 'warning';
+    }
+    
+    res.status(200).json(checks);
 });
 
 // Authentication middleware

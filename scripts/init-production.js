@@ -35,16 +35,21 @@ async function initProduction() {
         const defaultPassword = process.env.ADMIN_PASSWORD || 'admin123';
         const hashedPassword = await bcrypt.hash(defaultPassword, 10);
         
-        const users = [{
-            id: 'admin',
-            username: 'admin',
-            password: hashedPassword,
-            role: 'admin',
-            createdAt: new Date().toISOString()
-        }];
+        // Formato compatível com o servidor (objeto, não array)
+        const users = {
+            "admin": {
+                "username": "admin",
+                "passwordHash": hashedPassword,  // usar passwordHash, não password
+                "role": "admin",
+                "createdAt": new Date().toISOString(),
+                "active": true
+            }
+        };
         
         fs.writeFileSync(usersPath, JSON.stringify(users, null, 2));
         console.log('👤 Usuário admin criado');
+        console.log(`🔑 Username: admin`);
+        console.log(`🔑 Password: ${defaultPassword}`);
         
         if (!process.env.ADMIN_PASSWORD) {
             console.log('⚠️  IMPORTANTE: Usando senha padrão "admin123"');
