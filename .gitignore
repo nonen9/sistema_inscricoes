@@ -113,20 +113,24 @@ logs
 ehthumbs.db
 Thumbs.db
 
-# Project specific - Development only (COMENTADO PARA PRESERVAR DADOS)
-# data/tournaments.json
-# data/registrations.json  
-# data/players.json
-# data/payment-status.json
-# config/users.json
+# Project specific - Data files (use backup system for production)
+data/tournaments.json
+data/registrations.json  
+data/players.json
+data/payment-status.json
+config/users.json
 
-# Manter apenas os arquivos realmente temporários fora do controle de versão
+# Backup files - never commit these
+backups/
+*.backup
+*.tar.gz
+
+# Temporary files
 temp/
 *.tmp
 
 # Security - keep these files private
 generate-hash.js
-*.backup
 
 # Docker
 .dockerignore
