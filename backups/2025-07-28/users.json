@@ -1,0 +1,46 @@
+{
+  "admin": {
+    "username": "admin",
+    "passwordHash": "$2b$10$VvNgcjLYygbJVtIl.qGbUemQNpbqd7u/COyt2x6Vw8yA13CMJtoUC",
+    "role": "admin",
+    "createdAt": "2025-07-24T20:04:53.838Z",
+    "active": true
+  },
+  "teste123": {
+    "username": "teste123",
+    "passwordHash": "$2b$10$ttWVKuEcItLAIulMb5iz1.RUsCqppkD.hHwHJaJg15GgWCnc4hk6G",
+    "role": "organizer",
+    "createdAt": "2025-07-28T19:39:21.367Z",
+    "active": true
+  },
+  "testnode": {
+    "username": "testnode",
+    "passwordHash": "$2b$10$.umK.6.gbt1AuT.8dOnIXOC6pBAZVoktgfHOn9W503dJ4/qMdGuO2",
+    "role": "organizer",
+    "createdAt": "2025-07-28T19:46:38.616Z",
+    "active": false,
+    "updatedAt": "2025-07-28T19:47:11.046Z",
+    "deactivatedAt": "2025-07-28T19:47:11.047Z"
+  },
+  "thiago": {
+    "username": "thiago",
+    "passwordHash": "$2b$10$y96WQms2t7OEetPGo7O2HOOVlFml4F0QY67QKavgOFo7a82TmLHZ6",
+    "role": "organizer",
+    "createdAt": "2025-07-28T19:48:56.551Z",
+    "active": true
+  },
+  "admin2": {
+    "username": "admin2",
+    "passwordHash": "$2b$10$6QW4AJaHGwdulhGuEP67uOBc9Aptuw8fldVFhgfrt5BEpOIi30gUS",
+    "role": "organizer",
+    "createdAt": "2025-07-28T19:53:29.769Z",
+    "active": true
+  },
+  "gestao": {
+    "username": "gestao",
+    "passwordHash": "$2b$10$RPjC4kc1pzUWAkguIsm.AeBahgI468ryjbk.qsMn28/AuNSrXjHRC",
+    "role": "organizer",
+    "createdAt": "2025-07-28T20:08:23.853Z",
+    "active": true
+  }
+}

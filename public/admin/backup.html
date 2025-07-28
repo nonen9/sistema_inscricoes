@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciamento de Backup - Sistema de Inscrições</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .backup-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        
+        .backup-actions {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .backup-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+        }
+        
+        .backup-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .backup-item:last-child {
+            border-bottom: none;
+        }
+        
+        .backup-info {
+            flex: 1;
+        }
+        
+        .backup-filename {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .backup-date {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .backup-size {
+            color: #999;
+            font-size: 0.8em;
+        }
+        
+        .backup-actions-item {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .status-message {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        
+        .status-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="admin-header"></div>
+    
+    <div class="container">
+        <h1>Gerenciamento de Backup</h1>
+        
+        <div id="status-message"></div>
+        
+        <!-- Criar Backup -->
+        <div class="backup-section">
+            <h2>Criar Novo Backup</h2>
+            <p>Crie um backup completo de todos os dados do sistema (campeonatos, inscrições, jogadores e usuários).</p>
+            <div class="backup-actions">
+                <button id="create-backup-btn" class="btn btn-primary">Criar Backup</button>
+                <button id="refresh-list-btn" class="btn btn-secondary">Atualizar Lista</button>
+            </div>
+        </div>
+        
+        <!-- Restaurar Backup -->
+        <div class="backup-section">
+            <h2>Restaurar Backup</h2>
+            <p><strong>Atenção:</strong> A restauração irá substituir todos os dados atuais pelos dados do backup selecionado. Esta ação não pode ser desfeita.</p>
+            <div class="backup-list" id="backup-list">
+                <div style="padding: 20px; text-align: center; color: #666;">
+                    Carregando lista de backups...
+                </div>
+            </div>
+        </div>
+        
+        <!-- Informações do Sistema -->
+        <div class="backup-section">
+            <h2>Informações do Sistema de Backup</h2>
+            <ul>
+                <li><strong>Backup Automático:</strong> Criado diariamente às 02:00</li>
+                <li><strong>Retenção:</strong> Os últimos 30 backups são mantidos automaticamente</li>
+                <li><strong>Localização:</strong> /data/backups/ no container</li>
+                <li><strong>Formato:</strong> Arquivos JSON compactados com timestamp</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="admin-header.js"></script>
+    <script>
+        class BackupManager {
+            constructor() {
+                this.createBackupBtn = document.getElementById('create-backup-btn');
+                this.refreshListBtn = document.getElementById('refresh-list-btn');
+                this.backupList = document.getElementById('backup-list');
+                this.statusMessage = document.getElementById('status-message');
+                
+                this.setupEventListeners();
+                this.loadBackupList();
+            }
+            
+            setupEventListeners() {
+                this.createBackupBtn.addEventListener('click', () => this.createBackup());
+                this.refreshListBtn.addEventListener('click', () => this.loadBackupList());
+            }
+            
+            showStatus(message, type = 'success') {
+                this.statusMessage.innerHTML = `<div class="status-message status-${type}">${message}</div>`;
+                setTimeout(() => {
+                    this.statusMessage.innerHTML = '';
+                }, 5000);
+            }
+            
+            setLoading(isLoading) {
+                if (isLoading) {
+                    document.body.classList.add('loading');
+                } else {
+                    document.body.classList.remove('loading');
+                }
+            }
+            
+            async createBackup() {
+                try {
+                    this.setLoading(true);
+                    this.showStatus('Criando backup...', 'success');
+                    
+                    const response = await fetch('/api/admin/backup', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.showStatus(`Backup criado com sucesso: ${data.file}`, 'success');
+                        this.loadBackupList(); // Recarregar lista
+                    } else {
+                        throw new Error(data.error || 'Erro desconhecido');
+                    }
+                } catch (error) {
+                    console.error('Erro ao criar backup:', error);
+                    this.showStatus(`Erro ao criar backup: ${error.message}`, 'error');
+                } finally {
+                    this.setLoading(false);
+                }
+            }
+            
+            async loadBackupList() {
+                try {
+                    this.backupList.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Carregando...</div>';
+                    
+                    const response = await fetch('/api/admin/backups', {
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.renderBackupList(data.backups);
+                    } else {
+                        throw new Error(data.error || 'Erro desconhecido');
+                    }
+                } catch (error) {
+                    console.error('Erro ao carregar backups:', error);
+                    this.backupList.innerHTML = `<div style="padding: 20px; text-align: center; color: #d32f2f;">Erro ao carregar backups: ${error.message}</div>`;
+                }
+            }
+            
+            renderBackupList(backups) {
+                if (!backups || backups.length === 0) {
+                    this.backupList.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Nenhum backup encontrado</div>';
+                    return;
+                }
+                
+                // Ordenar por data (mais recente primeiro)
+                backups.sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                const html = backups.map(backup => `
+                    <div class="backup-item">
+                        <div class="backup-info">
+                            <div class="backup-filename">${backup.filename}</div>
+                            <div class="backup-date">${new Date(backup.date).toLocaleString('pt-BR')}</div>
+                            <div class="backup-size">${this.formatFileSize(backup.size)}</div>
+                        </div>
+                        <div class="backup-actions-item">
+                            <button class="btn btn-warning btn-sm" onclick="backupManager.restoreBackup('${backup.filename}')">
+                                Restaurar
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+                
+                this.backupList.innerHTML = html;
+            }
+            
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+            
+            async restoreBackup(filename) {
+                const confirmed = confirm(`Tem certeza que deseja restaurar o backup "${filename}"?\n\nEsta ação irá substituir todos os dados atuais e não pode ser desfeita.`);
+                
+                if (!confirmed) return;
+                
+                try {
+                    this.setLoading(true);
+                    this.showStatus('Restaurando backup...', 'success');
+                    
+                    const response = await fetch('/api/admin/restore', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ filename })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.showStatus('Backup restaurado com sucesso! A página será recarregada em 3 segundos.', 'success');
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 3000);
+                    } else {
+                        throw new Error(data.error || 'Erro desconhecido');
+                    }
+                } catch (error) {
+                    console.error('Erro ao restaurar backup:', error);
+                    this.showStatus(`Erro ao restaurar backup: ${error.message}`, 'error');
+                    this.setLoading(false);
+                }
+            }
+        }
+        
+        // Verificar autenticação
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '../login.html';
+        }
+        
+        // Inicializar gerenciador de backup
+        const backupManager = new BackupManager();
+    </script>
+</body>
+</html>

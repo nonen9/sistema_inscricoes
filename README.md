@@ -181,6 +181,43 @@ sistema-campeonatos/
 - Proteção contra ataques XSS e CSRF
 - Controle de acesso baseado em roles
 
+## 💾 Sistema de Backup
+
+O sistema inclui um **sistema de backup automático** para proteger os dados durante deployments:
+
+### 🛡️ Proteção de Dados
+- **Backup Automático**: Diário às 02:00 da manhã
+- **Backup Manual**: Interface web em `/admin/backup.html`
+- **Retenção**: Mantém os últimos 30 backups automaticamente
+- **Compressão**: Arquivos .tar.gz para economia de espaço
+
+### 🚀 Deploy Seguro
+Para deployments no EasyPanel ou outras plataformas:
+
+```bash
+# Antes do deploy
+./scripts/safe-deploy.sh pre
+
+# Após o deploy
+./scripts/safe-deploy.sh post
+```
+
+### 📂 Arquivos Protegidos
+- Campeonatos (`tournaments.json`)
+- Inscrições (`registrations.json`)
+- Jogadores (`players.json`)
+- Status de pagamento (`payment-status.json`)
+- Usuários do sistema (`users.json`)
+
+### 🔧 Restauração
+Em caso de perda de dados:
+1. Acesse `/admin/backup.html`
+2. Selecione o backup desejado
+3. Clique em "Restaurar"
+4. Confirme a operação
+
+📖 **Documentação Completa**: Veja `BACKUP_SYSTEM.md` para instruções detalhadas.
+
 ## 🚀 Roadmap Comercial
 
 Este projeto tem potencial para se tornar um **SaaS para gestão de campeonatos esportivos**. Consulte o arquivo `ROADMAP-COMERCIAL.md` para detalhes sobre:

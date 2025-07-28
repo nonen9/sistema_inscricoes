@@ -19,7 +19,8 @@ class AdminHeader {
             'create-tournament': 'create',
             'tournaments': 'tournaments',
             'players': 'players',
-            'users': 'users'
+            'users': 'users',
+            'backup': 'backup'
         };
         
         return pageMap[page] || 'dashboard';
@@ -82,6 +83,14 @@ class AdminHeader {
                 label: 'Usuários',
                 description: 'Gerenciar usuários do sistema'
             });
+            
+            items.push({
+                id: 'backup',
+                href: 'backup.html',
+                icon: '💾',
+                label: 'Backup',
+                description: 'Sistema de backup e restauração'
+            });
         }
         
         return items;
@@ -131,6 +140,11 @@ class AdminHeader {
             'users': {
                 title: 'Gerenciamento de Usuários',
                 subtitle: 'Adicione e gerencie usuários do sistema',
+                showBackButton: true
+            },
+            'backup': {
+                title: 'Sistema de Backup',
+                subtitle: 'Gerencie backups e restauração de dados',
                 showBackButton: true
             }
         };

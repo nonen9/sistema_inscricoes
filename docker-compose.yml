@@ -12,8 +12,12 @@ services:
       - ADMIN_PASSWORD=your-secure-admin-password
       - CORS_ORIGIN=*
     volumes:
-      - ./data:/app/data
-      - ./config:/app/config
+      # Volumes persistentes para dados críticos
+      - tournament_data:/app/data
+      - tournament_config:/app/config
+      - tournament_backups:/app/backups
+      # Mapeamento para host (backup local)
+      - ./backups:/app/host_backups
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
@@ -21,3 +25,12 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+# Volumes nomeados persistentes
+volumes:
+  tournament_data:
+    driver: local
+  tournament_config:
+    driver: local
+  tournament_backups:
+    driver: local

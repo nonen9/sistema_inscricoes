@@ -8,12 +8,16 @@ const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const config = require('./config');
+const BackupManager = require('./backup-manager');
 require('dotenv').config();
 
 const app = express();
 const PORT = config.port;
 const DATA_FILE = path.join(__dirname, config.dataPath, 'tournaments.json');
 const REGISTRATIONS_FILE = path.join(__dirname, config.dataPath, 'registrations.json');
+
+// Initialize Backup Manager
+const backupManager = new BackupManager();
 const PLAYERS_FILE = path.join(__dirname, config.dataPath, 'players.json');
 const USERS_FILE = path.join(__dirname, config.configPath, 'users.json');
 
@@ -1662,6 +1666,49 @@ app.put('/api/tournaments/:tournamentId/players/:playerKey/payment', requireAuth
     }
 });
 
+// Backup API endpoints
+app.post('/api/admin/backup', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const backupFile = await backupManager.createBackup();
+        res.json({ 
+            success: true, 
+            message: 'Backup criado com sucesso',
+            file: backupFile 
+        });
+    } catch (error) {
+        console.error('Erro ao criar backup:', error);
+        res.status(500).json({ error: 'Erro ao criar backup' });
+    }
+});
+
+app.post('/api/admin/restore', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const { filename } = req.body;
+        if (!filename) {
+            return res.status(400).json({ error: 'Nome do arquivo é obrigatório' });
+        }
+        
+        await backupManager.restoreFromBackup(filename);
+        res.json({ 
+            success: true, 
+            message: 'Dados restaurados com sucesso' 
+        });
+    } catch (error) {
+        console.error('Erro ao restaurar backup:', error);
+        res.status(500).json({ error: 'Erro ao restaurar backup' });
+    }
+});
+
+app.get('/api/admin/backups', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const backups = await backupManager.listBackups();
+        res.json({ success: true, backups });
+    } catch (error) {
+        console.error('Erro ao listar backups:', error);
+        res.status(500).json({ error: 'Erro ao listar backups' });
+    }
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error('Unhandled error:', err);
@@ -1973,11 +2020,53 @@ async function migrateTournaments() {
     }
 }
 
+// Backup automático dos dados críticos
+async function createAutomaticBackup() {
+    try {
+        const backupDir = path.join(__dirname, 'backups', new Date().toISOString().split('T')[0]);
+        await fs.mkdir(backupDir, { recursive: true });
+        
+        // Backup de dados
+        const dataFiles = ['tournaments.json', 'registrations.json', 'players.json', 'payment-status.json'];
+        for (const file of dataFiles) {
+            const sourcePath = path.join(__dirname, 'data', file);
+            const backupPath = path.join(backupDir, file);
+            try {
+                await fs.copyFile(sourcePath, backupPath);
+                console.log(`📦 Backup criado: ${file}`);
+            } catch (error) {
+                if (error.code !== 'ENOENT') {
+                    console.error(`❌ Erro ao fazer backup de ${file}:`, error.message);
+                }
+            }
+        }
+        
+        // Backup de configurações
+        const configPath = path.join(__dirname, 'config', 'users.json');
+        const configBackupPath = path.join(backupDir, 'users.json');
+        try {
+            await fs.copyFile(configPath, configBackupPath);
+            console.log('📦 Backup criado: users.json');
+        } catch (error) {
+            if (error.code !== 'ENOENT') {
+                console.error('❌ Erro ao fazer backup de users.json:', error.message);
+            }
+        }
+        
+        console.log(`✅ Backup automático concluído em: ${backupDir}`);
+    } catch (error) {
+        console.error('❌ Erro no backup automático:', error);
+    }
+}
+
 async function startServer() {
     await ensureDataDirectory();
     
     // Execute migration for existing tournaments
     await migrateTournaments();
+    
+    // Create automatic backup on server start
+    await createAutomaticBackup();
     
     app.listen(PORT, '0.0.0.0', () => {
         console.log(`🚀 Servidor rodando na porta ${PORT}`);
