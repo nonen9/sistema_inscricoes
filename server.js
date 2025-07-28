@@ -7,30 +7,31 @@ const axios = require('axios');
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const config = require('./config');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-const DATA_FILE = path.join(__dirname, 'data', 'tournaments.json');
-const REGISTRATIONS_FILE = path.join(__dirname, 'data', 'registrations.json');
-const PLAYERS_FILE = path.join(__dirname, 'data', 'players.json');
-const USERS_FILE = path.join(__dirname, 'config', 'users.json');
+const PORT = config.port;
+const DATA_FILE = path.join(__dirname, config.dataPath, 'tournaments.json');
+const REGISTRATIONS_FILE = path.join(__dirname, config.dataPath, 'registrations.json');
+const PLAYERS_FILE = path.join(__dirname, config.dataPath, 'players.json');
+const USERS_FILE = path.join(__dirname, config.configPath, 'users.json');
 
 // Load user configuration
 let userConfig = {};
 try {
     userConfig = JSON.parse(fsSync.readFileSync(USERS_FILE, 'utf8'));
     console.log('✅ Configuração de usuários carregada com sucesso');
-    console.log('👥 Usuários cadastrados:', Object.keys(userConfig));
+    console.log('👥 Usuários cadastrados:', userConfig.length || 0);
 } catch (error) {
     console.error('❌ Erro ao carregar configuração de usuários:', error.message);
-    console.log('💡 Execute: node generate-hash.js para criar o arquivo de usuários');
+    console.log('💡 Execute: npm run init para criar o arquivo de usuários');
     console.log('📁 Caminho do arquivo:', USERS_FILE);
 }
 
 // Authentication configuration from environment variables
 const AUTH_CONFIG = {
-    jwtSecret: process.env.JWT_SECRET || 'fallback-secret-key-not-secure',
+    jwtSecret: config.jwtSecret,
     sessionTimeout: process.env.SESSION_TIMEOUT || '24h',
     maxLoginAttempts: parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 5
 };
@@ -1585,6 +1586,34 @@ app.get('/api/reports/pricing', async (req, res) => {
     }
 });
 
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+    const healthCheck = {
+        status: 'OK',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        environment: config.environment,
+        version: require('./package.json').version,
+        checks: {
+            users: fsSync.existsSync(USERS_FILE),
+            dataDir: fsSync.existsSync(path.dirname(DATA_FILE)),
+            configDir: fsSync.existsSync(path.dirname(USERS_FILE))
+        }
+    };
+    
+    const allChecksPass = Object.values(healthCheck.checks).every(check => check === true);
+    
+    if (allChecksPass) {
+        res.status(200).json(healthCheck);
+    } else {
+        res.status(503).json({
+            ...healthCheck,
+            status: 'ERROR',
+            message: 'Some health checks failed'
+        });
+    }
+});
+
 // 404 handler
 app.use((req, res) => {
     res.status(404).json({ error: 'Rota não encontrada' });
@@ -1593,10 +1622,12 @@ app.use((req, res) => {
 async function startServer() {
     await ensureDataDirectory();
     
-    app.listen(PORT, () => {
-        console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
-        console.log(`📊 Admin: http://localhost:${PORT}/admin`);
-        console.log(`🏆 Sistema de Inscrições de Campeonato iniciado!`);
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`🚀 Servidor rodando na porta ${PORT}`);
+        console.log(`📊 Dashboard admin: http://localhost:${PORT}/admin`);
+        console.log(`� Página de inscrições: http://localhost:${PORT}/register.html`);
+        console.log(`💚 Health check: http://localhost:${PORT}/api/health`);
+        console.log(`🌍 Ambiente: ${config.environment}`);
     });
 }
 

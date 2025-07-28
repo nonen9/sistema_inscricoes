@@ -64,6 +64,7 @@ typings/
 .env.test
 .env.production
 .env.local
+.env.*.local
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -113,11 +114,17 @@ logs
 ehthumbs.db
 Thumbs.db
 
-# Project specific
-data/
+# Project specific - Development only
+data/tournaments.json
+data/registrations.json
+data/players.json
+data/payment-status.json
 config/users.json
-*.backup
 
 # Security - keep these files private
-config/users.json
 generate-hash.js
+*.backup
+
+# Docker
+.dockerignore
+docker-compose.override.yml

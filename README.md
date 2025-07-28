@@ -58,6 +58,62 @@ npm start
 
 O sistema estará disponível em `http://localhost:3000`
 
+## 🐳 Deploy com Docker
+
+### Usando Docker Compose (Recomendado)
+
+```bash
+# Configurar variáveis de ambiente
+cp .env.example .env
+# Edite o arquivo .env com suas configurações
+
+# Iniciar aplicação
+docker-compose up -d
+
+# Verificar logs
+docker-compose logs -f
+```
+
+### Usando Docker diretamente
+
+```bash
+# Build da imagem
+docker build -t sistema-campeonatos .
+
+# Executar container
+docker run -d \
+  --name sistema-campeonatos \
+  -p 3000:3000 \
+  -e NODE_ENV=production \
+  -e JWT_SECRET=seu-jwt-secret \
+  -e ADMIN_PASSWORD=sua-senha-admin \
+  -v $(pwd)/data:/app/data \
+  -v $(pwd)/config:/app/config \
+  sistema-campeonatos
+```
+
+## ☁️ Deploy no EasyPanel
+
+Para deploy no EasyPanel, consulte o arquivo [`DEPLOY.md`](DEPLOY.md) para instruções detalhadas.
+
+### Resumo do Deploy:
+
+1. **Prepare o projeto**: Todas as configurações já estão prontas
+2. **Conecte ao GitHub**: Configure seu repositório no EasyPanel
+3. **Configure variáveis de ambiente**:
+   ```
+   NODE_ENV=production
+   PORT=3000
+   JWT_SECRET=seu-jwt-secret-super-seguro
+   ADMIN_PASSWORD=sua-senha-admin-segura
+   ```
+4. **Configure volumes persistentes**:
+   - `/app/data` - Para dados dos campeonatos
+   - `/app/config` - Para configurações de usuários
+5. **Deploy**: O EasyPanel fará o build e deploy automaticamente
+
+O sistema estará disponível em `http://localhost:3000`
+
 ## 📁 Estrutura do Projeto
 
 ```
