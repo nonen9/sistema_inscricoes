@@ -26,6 +26,9 @@ class DataProtection {
         // Garantir que diretórios existam
         await this.ensureDirectories();
         
+        // FORÇA verificação e recuperação de arquivos críticos
+        await this.forceRecoveryCheck();
+        
         // Verificar proteção de ambiente
         await this.checkEnvironmentProtection();
         
@@ -49,6 +52,60 @@ class DataProtection {
                 console.log(`📁 Diretório garantido: ${dir}`);
             } catch (error) {
                 console.error(`❌ Erro ao criar diretório ${dir}:`, error.message);
+            }
+        }
+    }
+
+    /**
+     * FORÇA verificação e recuperação de arquivos críticos
+     */
+    async forceRecoveryCheck() {
+        console.log('🔍 VERIFICAÇÃO FORÇADA: Checando arquivos críticos...');
+        
+        const criticalFiles = [
+            path.join(this.dataPath, 'tournaments.json'),
+            path.join(this.dataPath, 'registrations.json'),
+            path.join(this.dataPath, 'players.json'),
+            path.join(this.dataPath, 'payment-status.json')
+        ];
+        
+        for (const filePath of criticalFiles) {
+            try {
+                // Verifica se arquivo existe e tem conteúdo válido
+                let needsRecovery = false;
+                
+                if (!fsSync.existsSync(filePath)) {
+                    console.log(`❌ Arquivo não existe: ${filePath}`);
+                    needsRecovery = true;
+                } else {
+                    const content = fsSync.readFileSync(filePath, 'utf8').trim();
+                    if (content === '' || content === '[]' || content === '{}') {
+                        console.log(`❌ Arquivo vazio/inválido: ${filePath}`);
+                        needsRecovery = true;
+                    } else {
+                        try {
+                            JSON.parse(content);
+                            console.log(`✅ Arquivo OK: ${filePath}`);
+                        } catch {
+                            console.log(`❌ JSON inválido: ${filePath}`);
+                            needsRecovery = true;
+                        }
+                    }
+                }
+                
+                // Tenta recuperar se necessário
+                if (needsRecovery) {
+                    console.log(`🔄 Tentando recuperar: ${filePath}`);
+                    const recovered = this.recoverFileFromBackups(filePath);
+                    if (recovered) {
+                        console.log(`✅ SUCESSO: ${filePath} recuperado!`);
+                    } else {
+                        console.log(`⚠️  Criando arquivo padrão: ${filePath}`);
+                        fsSync.writeFileSync(filePath, JSON.stringify([], null, 2));
+                    }
+                }
+            } catch (error) {
+                console.error(`❌ Erro verificando ${filePath}:`, error.message);
             }
         }
     }
@@ -330,8 +387,14 @@ class DataProtection {
             } catch (error) {
                 console.error(`❌ Erro na integridade de ${file}:`, error.message);
                 
-                // Tentar recuperar de backup
-                await this.recoverFromBackup(file);
+                // USAR A FUNÇÃO CORRIGIDA DE RECUPERAÇÃO
+                console.log(`🔄 Tentando recuperar ${file}...`);
+                const recovered = await this.recoverFileFromBackups(file);
+                if (!recovered) {
+                    // Se não conseguiu recuperar, criar arquivo vazio
+                    await fs.writeFile(filePath, JSON.stringify([], null, 2));
+                    console.log(`⚠️  Arquivo ${file} recriado vazio (sem backups válidos)`);
+                }
             }
         }
     }
@@ -354,28 +417,57 @@ class DataProtection {
             const currentPath = path.join(this.dataPath, file);
             
             try {
-                // Verificar se arquivo atual existe e tem dados
+                // SEMPRE verificar se há dados válidos, mesmo que o arquivo exista
                 let needsRecovery = false;
+                let currentDataCount = 0;
+                
                 try {
                     const currentContent = await fs.readFile(currentPath, 'utf8');
                     const currentData = JSON.parse(currentContent);
-                    if (!Array.isArray(currentData) || currentData.length === 0) {
+                    if (!Array.isArray(currentData)) {
                         needsRecovery = true;
+                        console.log(`⚠️  ${file} não é um array válido`);
+                    } else {
+                        currentDataCount = currentData.length;
+                        if (currentDataCount === 0) {
+                            console.log(`⚠️  ${file} está vazio, verificando se há backups...`);
+                            needsRecovery = true;
+                        } else {
+                            console.log(`ℹ️  ${file} tem ${currentDataCount} registros`);
+                        }
                     }
                 } catch (error) {
                     needsRecovery = true;
+                    console.log(`⚠️  ${file} não existe ou está corrompido`);
                 }
                 
                 if (needsRecovery) {
                     console.log(`🔍 Tentando recuperar ${file}...`);
                     
-                    // Procurar em backups automáticos primeiro
                     const recovered = await this.recoverFileFromBackups(file);
                     if (recovered) {
                         recoveredFiles++;
-                        console.log(`✅ ${file} recuperado com sucesso`);
+                        
+                        // Verificar quantos registros foram recuperados
+                        try {
+                            const recoveredContent = await fs.readFile(currentPath, 'utf8');
+                            const recoveredData = JSON.parse(recoveredContent);
+                            console.log(`✅ ${file} recuperado com ${recoveredData.length} registros`);
+                        } catch (error) {
+                            console.log(`✅ ${file} recuperado (erro ao verificar conteúdo)`);
+                        }
                     } else {
                         console.log(`⚠️  ${file} não pôde ser recuperado - criando vazio`);
+                        await fs.writeFile(currentPath, JSON.stringify([], null, 2));
+                    }
+                } else if (currentDataCount > 0) {
+                    // Arquivo tem dados válidos, fazer backup preventivo
+                    const preventiveBackupPath = path.join(this.dataPath, `current-backup-${file}`);
+                    try {
+                        await fs.copyFile(currentPath, preventiveBackupPath);
+                        console.log(`💾 Backup preventivo criado: current-backup-${file}`);
+                    } catch (error) {
+                        console.log(`⚠️  Erro ao criar backup preventivo de ${file}`);
                     }
                 }
             } catch (error) {
@@ -383,7 +475,7 @@ class DataProtection {
             }
         }
         
-        console.log(`🎯 Recuperação concluída: ${recoveredFiles} arquivos recuperados`);
+        console.log(`🎯 Recuperação concluída: ${recoveredFiles} arquivos recuperados/verificados`);
         return recoveredFiles;
     }
 
@@ -391,28 +483,37 @@ class DataProtection {
      * Recupera um arquivo específico dos backups
      */
     async recoverFileFromBackups(fileName) {
+        console.log(`🔍 Procurando ${fileName} em backups...`);
+        
         try {
-            // Procurar em dev-backup primeiro (dados mais recentes)
+            // PRIORITY 1: Procurar em dev-backup primeiro (dados mais recentes que foram "limpos")
             const devBackupPath = path.join(this.dataPath, `dev-backup-${fileName}`);
             try {
                 const content = await fs.readFile(devBackupPath, 'utf8');
                 const data = JSON.parse(content);
                 if (Array.isArray(data) && data.length > 0) {
                     const targetPath = path.join(this.dataPath, fileName);
-                    await fs.copyFile(devBackupPath, targetPath);
-                    console.log(`🔄 ${fileName} recuperado de dev-backup`);
+                    await fs.writeFile(targetPath, content);
+                    console.log(`🔄 ${fileName} recuperado de dev-backup com ${data.length} registros`);
                     return true;
                 }
             } catch (error) {
-                // Dev backup não existe ou inválido, continuar
+                console.log(`ℹ️  dev-backup-${fileName} não encontrado ou vazio`);
             }
             
-            // Procurar em backups automáticos
-            const files = await fs.readdir(this.dataPath);
-            const backupDirs = files.filter(file => 
-                file.startsWith('auto-backup-') || 
-                file.startsWith('production-backup-')
-            ).sort().reverse(); // Mais recentes primeiro
+            // PRIORITY 2: Procurar em backups automáticos (mais recentes primeiro)
+            let backupDirs = [];
+            try {
+                const files = await fs.readdir(this.dataPath);
+                backupDirs = files.filter(file => 
+                    file.startsWith('auto-backup-') || 
+                    file.startsWith('production-backup-')
+                ).sort().reverse(); // Mais recentes primeiro
+                
+                console.log(`📁 Encontrados ${backupDirs.length} diretórios de backup`);
+            } catch (error) {
+                console.log(`ℹ️  Nenhum diretório de backup encontrado`);
+            }
             
             for (const backupDir of backupDirs) {
                 const backupFile = path.join(this.dataPath, backupDir, fileName);
@@ -423,16 +524,44 @@ class DataProtection {
                     
                     if (Array.isArray(data) && data.length > 0) {
                         const targetPath = path.join(this.dataPath, fileName);
-                        await fs.copyFile(backupFile, targetPath);
-                        console.log(`🔄 ${fileName} recuperado de ${backupDir}`);
+                        await fs.writeFile(targetPath, content);
+                        console.log(`🔄 ${fileName} recuperado de ${backupDir} com ${data.length} registros`);
                         return true;
                     }
                 } catch (error) {
-                    continue; // Tentar próximo backup
+                    console.log(`ℹ️  ${backupDir}/${fileName} não encontrado ou inválido`);
+                    continue;
                 }
             }
             
+            // PRIORITY 3: Procurar em backups do sistema principal (se existirem)
+            try {
+                const mainBackupDir = path.join(__dirname, 'backups');
+                const backupFiles = await fs.readdir(mainBackupDir);
+                
+                for (const dateDir of backupFiles.sort().reverse()) {
+                    const backupFile = path.join(mainBackupDir, dateDir, fileName);
+                    try {
+                        const content = await fs.readFile(backupFile, 'utf8');
+                        const data = JSON.parse(content);
+                        
+                        if (Array.isArray(data) && data.length > 0) {
+                            const targetPath = path.join(this.dataPath, fileName);
+                            await fs.writeFile(targetPath, content);
+                            console.log(`🔄 ${fileName} recuperado de backup principal ${dateDir} com ${data.length} registros`);
+                            return true;
+                        }
+                    } catch (error) {
+                        continue;
+                    }
+                }
+            } catch (error) {
+                console.log(`ℹ️  Backup principal não encontrado`);
+            }
+            
+            console.log(`❌ Não foi possível recuperar ${fileName} - nenhum backup válido encontrado`);
             return false;
+            
         } catch (error) {
             console.error(`❌ Erro ao recuperar ${fileName}:`, error.message);
             return false;

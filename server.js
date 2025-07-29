@@ -2139,17 +2139,19 @@ async function startServer() {
         // 2. Ensure data directories exist
         await ensureDataDirectory();
         
-        // 3. CRITICAL: Check for data recovery needs
+        // 3. CRITICAL: Check for data recovery needs FIRST
         console.log('🔍 Verificando necessidade de recuperação de dados...');
         const recoveredFiles = await dataProtection.emergencyDataRecovery();
         if (recoveredFiles > 0) {
             console.log(`🆘 RECUPERAÇÃO DE EMERGÊNCIA: ${recoveredFiles} arquivos recuperados!`);
+        } else {
+            console.log('ℹ️  Nenhuma recuperação necessária ou possível');
         }
         
         // 4. Execute migration for existing tournaments
         await migrateTournaments();
         
-        // 5. Verify data integrity
+        // 5. Verify data integrity AFTER recovery
         await dataProtection.verifyDataIntegrity();
         
         // 6. Create automatic backup on server start
