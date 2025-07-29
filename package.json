@@ -23,6 +23,7 @@
     "deploy:safe": "node -e \"console.log('🚀 Executando deploy seguro...'); require('child_process').execSync(process.platform === 'win32' ? 'powershell .\\\\scripts\\\\deploy-safe.ps1' : 'bash ./scripts/deploy-safe.sh', {stdio: 'inherit'})\"",
     "backup:create": "node -e \"const dp = require('./data-protection'); new dp().createProductionBackup().then(() => console.log('✅ Backup criado')).catch(console.error)\"",
     "backup:verify": "node -e \"const dp = require('./data-protection'); new dp().verifyDataIntegrity().then(() => console.log('✅ Integridade verificada')).catch(console.error)\"",
+    "backup:recover": "node -e \"const dp = require('./data-protection'); new dp().emergencyDataRecovery().then(count => console.log(`✅ Recuperação concluída: ${count} arquivos`)).catch(console.error)\"",
     "production:check": "node -e \"console.log('🌍 Ambiente:', process.env.NODE_ENV || 'development'); console.log('📁 Dados:', process.env.DATA_PATH || './data')\"",
     "docker:build": "docker build -t sistema-campeonatos .",
     "docker:run": "docker run -p 3000:3000 sistema-campeonatos",

@@ -123,6 +123,16 @@ class DataProtection {
         console.log('⚠️  MUDANÇA DE AMBIENTE DETECTADA!');
         console.log(`📊 De: ${oldLock.environment} → Para: ${newLock.environment}`);
         
+        // PROTEÇÃO TEMPORARIAMENTE DESABILITADA - EVITAR PERDA DE DADOS
+        console.log('🛡️  Sistema de proteção em modo seguro - DADOS PRESERVADOS');
+        
+        // Fazer apenas backup dos dados atuais
+        await this.createProductionBackup();
+        
+        console.log('✅ Dados preservados durante mudança de ambiente');
+        
+        // TODO: Implementar proteção mais inteligente que não apague dados válidos
+        /*
         if (oldLock.environment === 'production' && newLock.environment === 'development') {
             console.log('🚨 TENTATIVA DE MUDANÇA DE PRODUÇÃO PARA DESENVOLVIMENTO!');
             await this.protectProductionData();
@@ -132,6 +142,7 @@ class DataProtection {
             console.log('🚨 TENTATIVA DE ENVIO DE DADOS DE DESENVOLVIMENTO PARA PRODUÇÃO!');
             await this.preventDevelopmentDataLeak();
         }
+        */
     }
 
     /**
@@ -326,15 +337,81 @@ class DataProtection {
     }
 
     /**
-     * Recupera arquivo de backup em caso de corrupção
+     * Recupera dados de backups mais recentes em caso de perda
      */
-    async recoverFromBackup(fileName) {
-        console.log(`🔄 Tentando recuperar ${fileName} de backup...`);
+    async emergencyDataRecovery() {
+        console.log('🆘 INICIANDO RECUPERAÇÃO DE EMERGÊNCIA...');
         
+        const files = [
+            'tournaments.json',
+            'registrations.json',
+            'players.json'
+        ];
+        
+        let recoveredFiles = 0;
+        
+        for (const file of files) {
+            const currentPath = path.join(this.dataPath, file);
+            
+            try {
+                // Verificar se arquivo atual existe e tem dados
+                let needsRecovery = false;
+                try {
+                    const currentContent = await fs.readFile(currentPath, 'utf8');
+                    const currentData = JSON.parse(currentContent);
+                    if (!Array.isArray(currentData) || currentData.length === 0) {
+                        needsRecovery = true;
+                    }
+                } catch (error) {
+                    needsRecovery = true;
+                }
+                
+                if (needsRecovery) {
+                    console.log(`🔍 Tentando recuperar ${file}...`);
+                    
+                    // Procurar em backups automáticos primeiro
+                    const recovered = await this.recoverFileFromBackups(file);
+                    if (recovered) {
+                        recoveredFiles++;
+                        console.log(`✅ ${file} recuperado com sucesso`);
+                    } else {
+                        console.log(`⚠️  ${file} não pôde ser recuperado - criando vazio`);
+                    }
+                }
+            } catch (error) {
+                console.error(`❌ Erro na recuperação de ${file}:`, error.message);
+            }
+        }
+        
+        console.log(`🎯 Recuperação concluída: ${recoveredFiles} arquivos recuperados`);
+        return recoveredFiles;
+    }
+
+    /**
+     * Recupera um arquivo específico dos backups
+     */
+    async recoverFileFromBackups(fileName) {
         try {
+            // Procurar em dev-backup primeiro (dados mais recentes)
+            const devBackupPath = path.join(this.dataPath, `dev-backup-${fileName}`);
+            try {
+                const content = await fs.readFile(devBackupPath, 'utf8');
+                const data = JSON.parse(content);
+                if (Array.isArray(data) && data.length > 0) {
+                    const targetPath = path.join(this.dataPath, fileName);
+                    await fs.copyFile(devBackupPath, targetPath);
+                    console.log(`🔄 ${fileName} recuperado de dev-backup`);
+                    return true;
+                }
+            } catch (error) {
+                // Dev backup não existe ou inválido, continuar
+            }
+            
+            // Procurar em backups automáticos
             const files = await fs.readdir(this.dataPath);
             const backupDirs = files.filter(file => 
-                file.startsWith('auto-backup-') || file.startsWith('production-backup-')
+                file.startsWith('auto-backup-') || 
+                file.startsWith('production-backup-')
             ).sort().reverse(); // Mais recentes primeiro
             
             for (const backupDir of backupDirs) {
@@ -342,27 +419,23 @@ class DataProtection {
                 
                 try {
                     const content = await fs.readFile(backupFile, 'utf8');
-                    JSON.parse(content); // Verificar se é JSON válido
+                    const data = JSON.parse(content);
                     
-                    // Restaurar arquivo
-                    const targetPath = path.join(this.dataPath, fileName);
-                    await fs.copyFile(backupFile, targetPath);
-                    
-                    console.log(`✅ Arquivo ${fileName} recuperado de ${backupDir}`);
-                    return;
-                    
+                    if (Array.isArray(data) && data.length > 0) {
+                        const targetPath = path.join(this.dataPath, fileName);
+                        await fs.copyFile(backupFile, targetPath);
+                        console.log(`🔄 ${fileName} recuperado de ${backupDir}`);
+                        return true;
+                    }
                 } catch (error) {
                     continue; // Tentar próximo backup
                 }
             }
             
-            // Se não encontrou backup válido, criar arquivo vazio
-            const targetPath = path.join(this.dataPath, fileName);
-            await fs.writeFile(targetPath, JSON.stringify([], null, 2));
-            console.log(`⚠️  Arquivo ${fileName} recriado vazio (sem backups válidos)`);
-            
+            return false;
         } catch (error) {
             console.error(`❌ Erro ao recuperar ${fileName}:`, error.message);
+            return false;
         }
     }
 }

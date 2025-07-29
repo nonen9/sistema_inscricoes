@@ -2139,16 +2139,23 @@ async function startServer() {
         // 2. Ensure data directories exist
         await ensureDataDirectory();
         
-        // 3. Execute migration for existing tournaments
+        // 3. CRITICAL: Check for data recovery needs
+        console.log('🔍 Verificando necessidade de recuperação de dados...');
+        const recoveredFiles = await dataProtection.emergencyDataRecovery();
+        if (recoveredFiles > 0) {
+            console.log(`🆘 RECUPERAÇÃO DE EMERGÊNCIA: ${recoveredFiles} arquivos recuperados!`);
+        }
+        
+        // 4. Execute migration for existing tournaments
         await migrateTournaments();
         
-        // 4. Verify data integrity
+        // 5. Verify data integrity
         await dataProtection.verifyDataIntegrity();
         
-        // 5. Create automatic backup on server start
+        // 6. Create automatic backup on server start
         await createAutomaticBackup();
         
-        // 6. Clean old backups
+        // 7. Clean old backups
         await dataProtection.cleanOldBackups();
         
         console.log('✅ Servidor inicializado com segurança');
