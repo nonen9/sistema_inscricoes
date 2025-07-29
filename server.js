@@ -9,6 +9,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const config = require('./config');
 const BackupManager = require('./backup-manager');
+const DataProtection = require('./data-protection');
 require('dotenv').config();
 
 const app = express();
@@ -16,8 +17,9 @@ const PORT = config.port;
 const DATA_FILE = path.join(__dirname, config.dataPath, 'tournaments.json');
 const REGISTRATIONS_FILE = path.join(__dirname, config.dataPath, 'registrations.json');
 
-// Initialize Backup Manager
+// Initialize Backup Manager and Data Protection
 const backupManager = new BackupManager();
+const dataProtection = new DataProtection();
 const PLAYERS_FILE = path.join(__dirname, config.dataPath, 'players.json');
 const USERS_FILE = path.join(__dirname, config.configPath, 'users.json');
 
@@ -2128,13 +2130,34 @@ async function createAutomaticBackup() {
 }
 
 async function startServer() {
-    await ensureDataDirectory();
-    
-    // Execute migration for existing tournaments
-    await migrateTournaments();
-    
-    // Create automatic backup on server start
-    await createAutomaticBackup();
+    try {
+        console.log('🚀 Inicializando servidor...');
+        
+        // 1. Initialize data protection FIRST - Critical for production safety
+        await dataProtection.initialize();
+        
+        // 2. Ensure data directories exist
+        await ensureDataDirectory();
+        
+        // 3. Execute migration for existing tournaments
+        await migrateTournaments();
+        
+        // 4. Verify data integrity
+        await dataProtection.verifyDataIntegrity();
+        
+        // 5. Create automatic backup on server start
+        await createAutomaticBackup();
+        
+        // 6. Clean old backups
+        await dataProtection.cleanOldBackups();
+        
+        console.log('✅ Servidor inicializado com segurança');
+        
+    } catch (error) {
+        console.error('❌ Erro crítico na inicialização do servidor:', error);
+        console.error('🚨 SERVIDOR NÃO SERÁ INICIADO POR SEGURANÇA');
+        process.exit(1);
+    }
     
     app.listen(PORT, '0.0.0.0', () => {
         console.log(`🚀 Servidor rodando na porta ${PORT}`);
@@ -2142,6 +2165,8 @@ async function startServer() {
         console.log(`� Página de inscrições: http://localhost:${PORT}/register.html`);
         console.log(`💚 Health check: http://localhost:${PORT}/api/health`);
         console.log(`🌍 Ambiente: ${config.environment}`);
+        console.log(`🔒 Sistema de proteção de dados ativo`);
+        console.log(`📁 Caminho dos dados: ${config.dataPath}`);
     });
 }
 

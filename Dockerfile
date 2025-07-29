@@ -19,8 +19,14 @@ COPY . .
 RUN echo "📁 Verificando estrutura após COPY:" && ls -la /app
 RUN echo "📁 Verificando pasta public:" && ls -la /app/public/ || echo "❌ Pasta public não encontrada"
 
-# Criar diretórios necessários
-RUN mkdir -p data config scripts
+# Criar diretórios necessários com proteção
+RUN mkdir -p data config scripts && \
+    echo "🔒 Criando estrutura segura de dados..." && \
+    echo "[]" > data/tournaments.json && \
+    echo "[]" > data/registrations.json && \
+    echo "[]" > data/players.json && \
+    echo "{}" > data/payment-status.json && \
+    echo "📁 Estrutura de dados inicializada"
 
 # Criar usuário não-root
 RUN addgroup -g 1001 -S nodejs && \
@@ -29,7 +35,8 @@ RUN addgroup -g 1001 -S nodejs && \
 # Dar permissões corretas aos diretórios
 RUN chown -R nodejs:nodejs /app && \
     chmod -R 755 /app && \
-    chmod +x /app/scripts/*.sh 2>/dev/null || true
+    chmod +x /app/scripts/*.sh 2>/dev/null || true && \
+    echo "🔒 Sistema de proteção de dados configurado"
 
 # Debug: Verificar permissões
 RUN echo "📋 Verificando permissões:" && ls -la /app/
