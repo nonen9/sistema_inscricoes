@@ -967,6 +967,7 @@ app.get('/api/tournaments', requireAuth, async (req, res) => {
         console.log('🔍 Listando campeonatos para usuário:', req.user.username, 'Role:', req.user.role);
         
         const tournaments = await readTournaments();
+        const registrations = await readRegistrations();
         
         let filteredTournaments;
         if (req.user.role === 'admin') {
@@ -979,7 +980,16 @@ app.get('/api/tournaments', requireAuth, async (req, res) => {
             console.log('👤 Organizador:', req.user.username, '- mostrando', filteredTournaments.length, 'de', tournaments.length, 'campeonatos');
         }
         
-        res.json(filteredTournaments);
+        // Add registrations count to each tournament
+        const tournamentsWithCounts = filteredTournaments.map(tournament => {
+            const tournamentRegistrations = registrations.filter(r => r.tournamentId === tournament.id);
+            return {
+                ...tournament,
+                registrationsCount: tournamentRegistrations.length
+            };
+        });
+        
+        res.json(tournamentsWithCounts);
     } catch (error) {
         console.error('Error fetching tournaments:', error);
         res.status(500).json({ error: 'Erro interno do servidor' });
@@ -1090,6 +1100,64 @@ app.post('/api/tournaments', requireAuth, async (req, res) => {
         });
     } catch (error) {
         console.error('Error creating tournament:', error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+// Delete tournament
+app.delete('/api/tournaments/:id', requireAuth, async (req, res) => {
+    try {
+        const tournamentId = req.params.id;
+        const user = req.user;
+
+        console.log(`🗑️ Tentativa de exclusão do torneio ${tournamentId} por ${user.username}`);
+
+        // Read tournaments
+        const tournaments = await readTournaments();
+        const tournamentIndex = tournaments.findIndex(t => t.id === tournamentId);
+
+        if (tournamentIndex === -1) {
+            return res.status(404).json({ error: 'Torneio não encontrado' });
+        }
+
+        const tournament = tournaments[tournamentIndex];
+
+        // Check permissions: admin can delete any tournament, organizer can only delete their own
+        if (user.role !== 'admin' && tournament.createdBy !== user.username) {
+            console.log(`❌ Usuário ${user.username} tentou excluir torneio de ${tournament.createdBy}`);
+            return res.status(403).json({ error: 'Você só pode excluir torneios criados por você' });
+        }
+
+        // Check if tournament has registrations
+        const registrations = await readRegistrations();
+        const tournamentRegistrations = registrations.filter(r => r.tournamentId === tournamentId);
+        
+        if (tournamentRegistrations.length > 0) {
+            return res.status(400).json({ 
+                error: `Não é possível excluir o torneio. Existem ${tournamentRegistrations.length} inscrição(ões) registrada(s).`,
+                registrationsCount: tournamentRegistrations.length
+            });
+        }
+
+        // Remove tournament from array
+        tournaments.splice(tournamentIndex, 1);
+
+        // Save updated tournaments
+        await writeTournaments(tournaments);
+
+        console.log(`✅ Torneio ${tournamentId} excluído com sucesso por ${user.username}`);
+        
+        res.json({ 
+            success: true, 
+            message: 'Torneio excluído com sucesso',
+            deletedTournament: {
+                id: tournament.id,
+                name: tournament.name
+            }
+        });
+
+    } catch (error) {
+        console.error('Error deleting tournament:', error);
         res.status(500).json({ error: 'Erro interno do servidor' });
     }
 });

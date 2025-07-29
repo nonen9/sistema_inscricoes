@@ -226,7 +226,7 @@
                         </div>
 
                         <!-- Action Buttons -->
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             <button onclick="openRegistrationPage('${tournament.id}')" 
                                     class="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors text-sm">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -247,6 +247,13 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                                 </svg>
                                 Abrir Público
+                            </button>
+                            <button onclick="deleteTournament('${tournament.id}', '${tournament.name.replace(/'/g, "\\'")}', ${tournament.registrationsCount || 0})" 
+                                    class="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-md transition-colors text-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                                Excluir
                             </button>
                         </div>
                     </div>
@@ -351,6 +358,51 @@
 
         function viewUniquePlayers(tournamentId) {
             window.open(`/admin/players.html?tournament=${tournamentId}`, '_blank');
+        }
+
+        // Delete tournament function
+        async function deleteTournament(tournamentId, tournamentName, registrationsCount) {
+            // Check if tournament has registrations
+            if (registrationsCount > 0) {
+                alert(`Não é possível excluir o campeonato "${tournamentName}".\n\nO campeonato possui ${registrationsCount} inscrição(ões) registrada(s).\n\nPara excluir este campeonato, primeiro remova todas as inscrições.`);
+                return;
+            }
+
+            // Confirm deletion
+            const confirmed = confirm(`Tem certeza que deseja excluir o campeonato "${tournamentName}"?\n\nEsta ação não pode ser desfeita.`);
+            
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                console.log(`🗑️ Tentando excluir campeonato: ${tournamentId}`);
+                
+                const response = await fetch(`/api/tournaments/${tournamentId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    alert(`Campeonato "${tournamentName}" excluído com sucesso!`);
+                    
+                    // Reload the page to refresh the tournaments list
+                    window.location.reload();
+                } else {
+                    // Handle error messages
+                    const errorMessage = data.error || 'Erro desconhecido ao excluir campeonato';
+                    alert(`Erro ao excluir campeonato:\n\n${errorMessage}`);
+                    console.error('Delete error:', data);
+                }
+            } catch (error) {
+                console.error('Error deleting tournament:', error);
+                alert('Erro de conexão ao tentar excluir o campeonato. Verifique sua conexão e tente novamente.');
+            }
         }
 
         // Initialize the app
