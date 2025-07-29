@@ -1036,8 +1036,8 @@ app.post('/api/tournaments', requireAuth, async (req, res) => {
             return res.status(400).json({ error: 'Campos obrigatórios não preenchidos' });
         }
 
-        if (new Date(startDate) >= new Date(endDate)) {
-            return res.status(400).json({ error: 'Data de início deve ser anterior à data de término' });
+        if (new Date(startDate) > new Date(endDate)) {
+            return res.status(400).json({ error: 'Data de início deve ser anterior ou igual à data de término' });
         }
 
         // Validate categories - now supporting custom categories

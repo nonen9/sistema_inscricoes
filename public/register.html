@@ -288,8 +288,11 @@
                 const tournament = this.tournamentData;
                 
                 document.getElementById('tournamentTitle').textContent = `🏆 ${tournament.name}`;
+                // Fix date display to avoid timezone issues
+                const startDate = new Date(tournament.startDate + 'T12:00:00');
+                const endDate = new Date(tournament.endDate + 'T12:00:00');
                 document.getElementById('tournamentDates').textContent = 
-                    `${new Date(tournament.startDate).toLocaleDateString('pt-BR')} - ${new Date(tournament.endDate).toLocaleDateString('pt-BR')}`;
+                    `${startDate.toLocaleDateString('pt-BR')} - ${endDate.toLocaleDateString('pt-BR')}`;
                 document.getElementById('tournamentLocation').textContent = tournament.location;
                 
                 const categoriesContainer = document.getElementById('tournamentCategories');

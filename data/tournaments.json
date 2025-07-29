@@ -1,1 +1,23 @@
-[]
+[
+  {
+    "id": "e529dac8-7b26-41cc-9ee7-04b58e50cf9d",
+    "name": "Reis da Mesa - 2ª Edição",
+    "categories": [
+      {
+        "id": "category-1",
+        "name": "x1",
+        "playersPerTeam": 1,
+        "description": "Categoria x1 - 1 jogador por time"
+      }
+    ],
+    "maxRegistrations": null,
+    "startDate": "2025-07-30",
+    "endDate": "2025-07-30",
+    "location": "Ace Beach Sports",
+    "baseCategoryPrice": 10,
+    "additionalCategoryPrice": 5,
+    "webhook": null,
+    "createdBy": "admin",
+    "createdAt": "2025-07-29T22:16:26.111Z"
+  }
+]

@@ -142,7 +142,7 @@
 
             displayTournaments(tournaments) {
                 // Sort tournaments by start date (most recent first)
-                tournaments.sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+                tournaments.sort((a, b) => new Date(b.startDate + 'T12:00:00') - new Date(a.startDate + 'T12:00:00'));
 
                 this.tournamentsGrid.innerHTML = tournaments.map(tournament => `
                     <div class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-200 animate-fade-in">
@@ -154,7 +154,7 @@
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                     </svg>
-                                    <span>${new Date(tournament.startDate).toLocaleDateString('pt-BR')} - ${new Date(tournament.endDate).toLocaleDateString('pt-BR')}</span>
+                                    <span>${new Date(tournament.startDate + 'T12:00:00').toLocaleDateString('pt-BR')} - ${new Date(tournament.endDate + 'T12:00:00').toLocaleDateString('pt-BR')}</span>
                                 </div>
                                 <div class="flex items-start gap-2 text-sm text-gray-600 mb-1">
                                     <svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -262,8 +262,8 @@
 
             getStatusColor(tournament) {
                 const now = new Date();
-                const startDate = new Date(tournament.startDate);
-                const endDate = new Date(tournament.endDate);
+                const startDate = new Date(tournament.startDate + 'T12:00:00');
+                const endDate = new Date(tournament.endDate + 'T12:00:00');
 
                 if (now < startDate) {
                     return 'bg-blue-100 text-blue-800';
@@ -276,8 +276,8 @@
 
             getStatusText(tournament) {
                 const now = new Date();
-                const startDate = new Date(tournament.startDate);
-                const endDate = new Date(tournament.endDate);
+                const startDate = new Date(tournament.startDate + 'T12:00:00');
+                const endDate = new Date(tournament.endDate + 'T12:00:00');
 
                 if (now < startDate) {
                     return 'Aguardando';

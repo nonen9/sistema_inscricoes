@@ -502,8 +502,8 @@
                     isValid = false;
                 }
 
-                if (data.startDate && data.endDate && new Date(data.startDate) >= new Date(data.endDate)) {
-                    errors.push('Data de início deve ser anterior à data de término');
+                if (data.startDate && data.endDate && new Date(data.startDate) > new Date(data.endDate)) {
+                    errors.push('Data de início deve ser anterior ou igual à data de término');
                     [document.getElementById('startDate'), document.getElementById('endDate')].forEach(field => {
                         field.classList.add('form-error');
                         field.style.transform = 'scale(1.02)';
